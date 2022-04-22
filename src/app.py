@@ -3,6 +3,7 @@ import uuid
 
 import pandas as pd
 from flask import Flask, abort, g, jsonify, request
+from flask_cors import CORS
 from loguru import logger
 
 from src.config import CONFIG_BY_ENV
@@ -15,10 +16,12 @@ ENV = os.getenv("FLASK_ENV", "local")
 CFG = CONFIG_BY_ENV[os.getenv("FLASK_ENV", "local")]
 DB_URI = f"{CFG.DB_TYPE}://{CFG.DB_USER}:{CFG.DB_PASSWORD}@{CFG.DB_HOST}:{CFG.DB_PORT}/{CFG.DB_NAME}"
 
+logger.info("Starting the server...")
 app = Flask(__name__)
 app.config["DEBUG"] = True
 app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
-logger.info("Starting the server...")
+
+CORS(app)
 
 db.init_app(app)
 with app.app_context():
@@ -28,13 +31,6 @@ with app.app_context():
 
 
 logger.info("Server up and running...")
-
-
-@app.route("/test", methods=["GET"])
-def test():
-    data = CatalogueItem.query.all()
-    print(data)
-    return "Catalogue server v1 api!"
 
 
 @app.route("/catalogue/upload/", methods=["POST"])
