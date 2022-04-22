@@ -5,13 +5,14 @@ import pandas as pd
 from flask import Flask, abort, g, jsonify, request
 from loguru import logger
 
-from src.services.db.models2 import CatalogueItem, db
+from src.config import CONFIG_BY_ENV
+from src.services.db.models import CatalogueItem, db
 
-DB_PORT = os.getenv("DB_PORT", 5432)
-DB_NAME = os.getenv("DB_NAME", "tempdb")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASS")
-DB_URI = f"postgresql://{DB_USER}:{DB_PASSWORD}@localhost:{DB_PORT}/{DB_NAME}"
+ENV = os.getenv("FLASK_ENV", "local")
+
+# TODO: Raise error if values not set
+CFG = CONFIG_BY_ENV[os.getenv("FLASK_ENV", "local")]
+DB_URI = f"{CFG.DB_TYPE}://{CFG.DB_USER}:{CFG.DB_PASSWORD}@{CFG.DB_HOST}:{CFG.DB_PORT}/{CFG.DB_NAME}"
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
@@ -19,7 +20,6 @@ app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
 logger.info("Starting the server...")
 
 db.init_app(app)
-
 with app.app_context():
     logger.info("Creating all tables...")
     db.create_all()
@@ -38,6 +38,13 @@ def test():
 
 @app.route("/catalogue/upload/", methods=["POST"])
 def upload_csv():
+    """
+    Endpoint to upload CSV and update catalogeitem table
+
+    TODO:
+        - sanity check csv column names
+        - proper json return
+    """
     logger.info("/catalogue/upload/ POST called")
     fname = uuid.uuid4().hex
     fpath = os.path.join("tmp", f"{fname}.csv")

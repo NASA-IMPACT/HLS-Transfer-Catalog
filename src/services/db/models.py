@@ -1,26 +1,29 @@
-from sqlalchemy import BIGINT, Column, Date, DateTime, Float, Integer, Sequence, String
-from sqlalchemy.ext.declarative import declarative_base
+from flask_sqlalchemy import SQLAlchemy
 
-Base = declarative_base()
+db = SQLAlchemy()
+
 TABLE_PREFIX = "catalogue_"
 
 
-class CatalogueItem(Base):
+class CatalogueItem(db.Model):
     __tablename__ = f"{TABLE_PREFIX}catalogueitem"
-    uuid = Column(String, primary_key=True)
-    name = Column(String)
-    content_length = Column(BIGINT)
-    ingestion_date = Column(DateTime)
-    contentdate_start = Column(DateTime)
-    contentdate_end = Column(DateTime)
-    checksum_algorithm = Column(String)
-    checksum_value = Column(String)
+    uuid = db.Column(db.String, primary_key=True)
+    name = db.Column(db.String)
+    content_length = db.Column(db.BIGINT)
+    ingestion_date = db.Column(db.DateTime)
+    content_date_start = db.Column(db.DateTime)
+    content_date_end = db.Column(db.DateTime)
+    checksum_algorithm = db.Column(db.String)
+    checksum_value = db.Column(db.String)
 
 
-class TransferInfo(Base):
+class TransferInfo(db.Model):
     __tablename__ = f"{TABLE_PREFIX}transfer_info"
-    transfer_id = Column(String, primary_key=True)
-    catalogue_uuid = Column(String)
-    status = Column(String)
-    started_on = Column(DateTime)
-    completed_on = Column(DateTime)
+    transfer_id = db.Column(db.String, primary_key=True)
+    catalogue_uuid = db.Column(db.String)
+    status = db.Column(db.String)  # IN-PROGRESS/COMPLETED/TODO
+    checksum_verification = db.Column(db.String(10))  # GOOD/BAD
+    started_on = db.Column(db.DateTime)
+    completed_on = db.Column(db.DateTime)
+    source = db.Column(db.String, nullable=True)  # ESA/NASA?
+    destination = db.Column(db.String, nullable=True)  # ESA/NASA
