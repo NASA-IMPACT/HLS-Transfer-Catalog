@@ -7,6 +7,7 @@ from loguru import logger
 
 from src.config import CONFIG_BY_ENV
 from src.services.db.models import CatalogueItem, db
+from src.utils import abort_json, clean_files
 
 ENV = os.getenv("FLASK_ENV", "local")
 
@@ -43,7 +44,6 @@ def upload_csv():
 
     TODO:
         - sanity check csv column names
-        - proper json return
     """
     logger.info("/catalogue/upload/ POST called")
     fname = uuid.uuid4().hex
@@ -52,7 +52,12 @@ def upload_csv():
     body.save(fpath)
 
     logger.debug("Normalizing column names...")
-    data = pd.read_csv(fpath)
+    try:
+        data = pd.read_csv(fpath)
+    except:
+        logger.error("Failed to load csv")
+        clean_files([fpath])
+        abort_json(400, error="INVALID_FILE")
     data.rename(
         columns={
             "Id": "uuid",
@@ -67,14 +72,21 @@ def upload_csv():
         inplace=True,
     )
     logger.debug("Dumping to table={CatalogueItem.__tablename__}")
-    _ = data.to_sql(
-        name=CatalogueItem.__tablename__,
-        con=db.engine,
-        index=False,
-        if_exists="replace",
-    )
-    logger.debug("Successful!")
-    return "success"
+    try:
+        _ = data.to_sql(
+            name=CatalogueItem.__tablename__,
+            con=db.engine,
+            index=False,
+            if_exists="replace",
+        )
+    except:
+        logger.error("CatalogueItem table upload failed")
+        clean_files([fpath])
+        abort_json(400, error="UPLOAD_FAILED")
+    logger.debug("CatalogueItem table updated Successfully!")
+
+    clean_files([fpath])
+    return jsonify({"message": "success"}), 200
 
 
 @app.route("/health/", methods=["GET"])
