@@ -18,8 +18,7 @@ RUN mkdir /hls-transfer-catalog/
 COPY requirements.txt /hls-transfer-catalog/requirements.txt
 
 # install python package
-RUN pip3 install -r /hls-transfer-catalog/requirements/ml.txt && \
-    pip3 install -r /hls-transfer-catalog/requirements/production.txt
+RUN pip3 install -r /hls-transfer-catalog/requirements.txt
 
 COPY nginx.default /etc/nginx/sites-available/default
 RUN ln -sf /dev/stdout /var/log/nginx/access.log \
