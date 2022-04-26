@@ -9,6 +9,7 @@ RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends\
     zip \
     nginx \
     jq \
+    awscli \
     && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
