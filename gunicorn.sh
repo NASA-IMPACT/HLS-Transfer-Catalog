@@ -9,4 +9,6 @@ export DB_PORT=$(echo $SECRETS | jq -r .port)
 # Setting this environment variable to surpass a psql password prompt
 export DB_PASSWORD=$(echo $SECRETS | jq -r .password)
 
-gunicorn --bind 0.0.0.0:$PORT --workers=1 --threads=8 src.app:app --timeout=900
+gunicorn --bind 0.0.0.0:$PORT --workers=1 --threads=8 src.app:app --timeout=900 &
+
+nginx -g "daemon off;"
