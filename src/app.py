@@ -2,12 +2,14 @@ import os
 import uuid
 
 import pandas as pd
+from dateutil import parser as dt_parser
 from flask import Flask, abort, g, jsonify, request
 from flask_cors import CORS
 from loguru import logger
 
 from src.config import CONFIG_BY_ENV
 from src.services.db.models import CatalogueItem, db
+from src.services.db.schema import CatalogueItemSchema
 from src.utils import abort_json, clean_files
 
 ENV = os.getenv("FLASK_ENV", "local")
@@ -29,8 +31,41 @@ with app.app_context():
     db.create_all()
     logger.info("Created tables..")
 
+os.makedirs("tmp", exist_ok=True)
 
 logger.info("Server up and running...")
+
+
+@app.route("/catalogue/", methods=["GET"])
+def list_catalogue():
+    start_date = request.args.get("start_date", "").strip()
+    end_date = request.args.get("end_date", "").strip()
+
+    try:
+        start_date = dt_parser.parse(start_date)
+    except:
+        logger.error("Failed to parse start_date...")
+        start_date = None
+
+    try:
+        end_date = dt_parser.parse(end_date)
+    except:
+        logger.error("Failed to parse end_date...")
+        end_date = None
+
+    logger.debug(f"start_date: {start_date}, end_date: {end_date}")
+
+    res = CatalogueItem.query
+    if start_date:
+        res = res.filter(CatalogueItem.content_date_start >= start_date)
+    if end_date:
+        res = res.filter(CatalogueItem.content_date_end <= end_date)
+    res = res.all()
+
+    res = CatalogueItemSchema(many=True).dump(res)
+    logger.debug(f"Total rows selected = {len(res)}")
+
+    return jsonify(res)
 
 
 @app.route("/catalogue/upload/", methods=["POST"])
@@ -67,6 +102,17 @@ def upload_csv():
         },
         inplace=True,
     )
+
+    try:
+        data["content_date_start"] = pd.to_datetime(data["content_date_start"])
+        data["content_date_end"] = pd.to_datetime(data["content_date_end"])
+    except:
+        logger.error(
+            "Date time conversion failed for content_date_start and content_date_end columns! Aborting..."
+        )
+        clean_files([fpath])
+        abort_json(400, error="UPLOAD_FAILED")
+
     logger.debug("Dumping to table={CatalogueItem.__tablename__}")
     try:
         _ = data.to_sql(
