@@ -29,6 +29,8 @@ WORKDIR /hls-transfer-catalog/
 
 COPY . /hls-transfer-catalog/
 
+RUN mkdir /hls-transfer-catalog/tmp
+
 ARG PORT
 ARG SECRET
 ARG FULL_API_BASE_URL
