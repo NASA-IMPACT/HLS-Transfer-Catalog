@@ -29,7 +29,7 @@ WORKDIR /hls-transfer-catalog/
 
 COPY . /hls-transfer-catalog/
 
-CMD ['mkdir', '/hls-transfer-catalog/tmp']
+RUN mkdir /hls-transfer-catalog/tmp
 
 ARG PORT
 ARG SECRET
