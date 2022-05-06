@@ -6,6 +6,15 @@ TABLE_PREFIX = "catalogue_"
 
 
 class CatalogueItem(db.Model):
+    """
+    This is the metadata information for each file
+    to be transferred.
+
+    Ingestion date is when the file was processed/added to the dataset.
+    Content start/end is when the data was sensed.
+
+    """
+
     __tablename__ = f"{TABLE_PREFIX}catalogueitem"
     uuid = db.Column(db.String, primary_key=True)
     name = db.Column(db.String)
@@ -18,6 +27,13 @@ class CatalogueItem(db.Model):
 
 
 class TransferInfo(db.Model):
+    """
+    This stores the tracking information
+    for each file to be transferred.
+
+    Each file is identified by `catalogue_uuid` value.
+    """
+
     __tablename__ = f"{TABLE_PREFIX}transfer_info"
     transfer_id = db.Column(db.String, primary_key=True)
     catalogue_uuid = db.Column(db.String)

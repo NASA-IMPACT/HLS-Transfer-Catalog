@@ -73,8 +73,18 @@ def upload_csv():
     """
     Endpoint to upload CSV and update catalogeitem table
 
+    This only accepts a csv file with following columns (strictly):
+        - Id (unique identifier to the file)
+        - Name
+        - ContentLength
+        - IngestionDate
+        - ContentDate:Start
+        - ContentDate:End
+        - Checksum:Algorithm
+        - Checksum:Value
+
     TODO:
-        - sanity check csv column names
+        - optimize csv loader for a very large CSV
     """
     logger.info("/catalogue/upload/ POST called")
     fname = uuid.uuid4().hex
@@ -89,29 +99,53 @@ def upload_csv():
         logger.error("Failed to load csv")
         clean_files([fpath])
         abort_json(400, error="INVALID_FILE")
-    data.rename(
-        columns={
-            "Id": "uuid",
-            "Name": "name",
-            "ContentLength": "content_length",
-            "IngestionDate": "ingestion_date",
-            "ContentDate:Start": "content_date_start",
-            "ContentDate:End": "content_date_end",
-            "Checksum:Algorithm": "checksum_algorithm",
-            "Checksum:Value": "checksum_value",
-        },
-        inplace=True,
-    )
 
+    try:
+        data.rename(
+            columns={
+                "Id": "uuid",
+                "Name": "name",
+                "ContentLength": "content_length",
+                "IngestionDate": "ingestion_date",
+                "ContentDate:Start": "content_date_start",
+                "ContentDate:End": "content_date_end",
+                "Checksum:Algorithm": "checksum_algorithm",
+                "Checksum:Value": "checksum_value",
+            },
+            inplace=True,
+        )
+    except:
+        logger.error("Some columns are missing or improper column name.")
+        clean_files([fpath])
+        abort_json(
+            400,
+            error="UPLOAD_FAILED",
+            message="Invalid columns or some columns are missing!",
+        )
+
+    # make sure these columns aren't empty
+    if data[["uuid", "name"]].isna().sum().sum() > 0:
+        logger.error("uuid or name column values are empty!")
+        clean_files([fpath])
+        abort_json(
+            400, error="UPLOAD_FAILED", message="uuid or name column value empty!"
+        )
+
+    # in case content end date is missing, fill it up with start date
+    data["content_date_end"].fillna(data["content_date_start"], inplace=True)
     try:
         data["content_date_start"] = pd.to_datetime(data["content_date_start"])
         data["content_date_end"] = pd.to_datetime(data["content_date_end"])
+        data["ingestion_date"] = pd.to_datetime(data["ingestion_date"])
+        # data["ingestion_date"] = data["ingestion_date"].apply(dt_parser.parse)
     except:
         logger.error(
             "Date time conversion failed for content_date_start and content_date_end columns! Aborting..."
         )
         clean_files([fpath])
-        abort_json(400, error="UPLOAD_FAILED")
+        abort_json(
+            400, error="UPLOAD_FAILED", message="Invalid ingestion/content-start date!"
+        )
 
     logger.debug("Dumping to table={CatalogueItem.__tablename__}")
     try:
@@ -124,9 +158,9 @@ def upload_csv():
     except:
         logger.error("CatalogueItem table upload failed")
         clean_files([fpath])
-        abort_json(400, error="UPLOAD_FAILED")
-    logger.debug("CatalogueItem table updated Successfully!")
+        abort_json(400, error="UPLOAD_FAILED", message="Dumping to sql table failed!")
 
+    logger.info("CatalogueItem table updated Successfully!")
     clean_files([fpath])
     return jsonify({"message": "success"}), 200
 
