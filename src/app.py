@@ -75,7 +75,7 @@ def list_catalogue():
         - status
     """
     logger.info("/catalogue/ - GET called")
-    status = request.args.get("status", "NOT_STARTED").strip().upper()
+    status = request.args.get("transfer_status", "NOT_STARTED").strip().upper()
     logger.debug(f"status = {status}")
 
     res = CatalogueItem.query.filter(CatalogueItem.transfer_status == status)
