@@ -91,6 +91,7 @@ def create_catalogue():
     data["uuid"] = data.get("uuid", uuid.uuid4().hex)
     data["created_on"] = data.get("created_on", datetime.now())
     data["updated_on"] = data.get("updated_on", datetime.now())
+    data["transfer_status"] = data.get("transfer_status", "NOT_STARTED").upper()
 
     query = CatalogueItem.query.filter_by(uuid=data["uuid"]).first()
     if query:
