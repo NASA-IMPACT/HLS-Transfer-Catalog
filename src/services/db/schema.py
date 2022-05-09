@@ -15,3 +15,11 @@ class CatalogueItemSchema(SQLAlchemySchema):
     content_date_end = fields.fields.String()
     checksum_algorithm = auto_field()
     checksum_value = auto_field()
+
+    transfer_status = auto_field()
+    transfer_checksum_value = auto_field()
+    transfer_checksum_verification = auto_field()
+    transfer_started_on = fields.fields.String()
+    transfer_completed_on = fields.fields.String()
+    transfer_source = auto_field()
+    transfer_destination = auto_field()

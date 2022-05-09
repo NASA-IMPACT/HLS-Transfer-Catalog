@@ -36,32 +36,49 @@ os.makedirs("tmp", exist_ok=True)
 logger.info("Server up and running...")
 
 
+# @app.route("/catalogue/", methods=["GET"])
+# def list_catalogue():
+#     start_date = request.args.get("start_date", "").strip()
+#     end_date = request.args.get("end_date", "").strip()
+
+#     try:
+#         start_date = dt_parser.parse(start_date)
+#     except:
+#         logger.error("Failed to parse start_date...")
+#         start_date = None
+
+#     try:
+#         end_date = dt_parser.parse(end_date)
+#     except:
+#         logger.error("Failed to parse end_date...")
+#         end_date = None
+
+#     logger.debug(f"start_date: {start_date}, end_date: {end_date}")
+
+#     res = CatalogueItem.query
+#     if start_date:
+#         res = res.filter(CatalogueItem.ingestion_date >= start_date)
+#     if end_date:
+#         res = res.filter(CatalogueItem.ingestion_date <= end_date)
+#     res = res.all()
+
+#     res = CatalogueItemSchema(many=True).dump(res)
+#     logger.debug(f"Total rows selected = {len(res)}")
+
+#     return jsonify(res)
+
+
 @app.route("/catalogue/", methods=["GET"])
 def list_catalogue():
-    start_date = request.args.get("start_date", "").strip()
-    end_date = request.args.get("end_date", "").strip()
+    """
+    This API is used to select the CatalogueItem table based on quer fitlers:
+        - status
+    """
+    logger.info("/catalogue/ - GET called")
+    status = request.args.get("status", "NOT_STARTED").strip().upper()
+    logger.debug(f"status = {status}")
 
-    try:
-        start_date = dt_parser.parse(start_date)
-    except:
-        logger.error("Failed to parse start_date...")
-        start_date = None
-
-    try:
-        end_date = dt_parser.parse(end_date)
-    except:
-        logger.error("Failed to parse end_date...")
-        end_date = None
-
-    logger.debug(f"start_date: {start_date}, end_date: {end_date}")
-
-    res = CatalogueItem.query
-    if start_date:
-        res = res.filter(CatalogueItem.content_date_start >= start_date)
-    if end_date:
-        res = res.filter(CatalogueItem.content_date_end <= end_date)
-    res = res.all()
-
+    res = CatalogueItem.query.filter(CatalogueItem.transfer_status == status)
     res = CatalogueItemSchema(many=True).dump(res)
     logger.debug(f"Total rows selected = {len(res)}")
 
@@ -147,7 +164,16 @@ def upload_csv():
             400, error="UPLOAD_FAILED", message="Invalid ingestion/content-start date!"
         )
 
-    logger.debug("Dumping to table={CatalogueItem.__tablename__}")
+    # add transfer columns
+    data["transfer_status"] = "NOT_STARTED"
+    data["transfer_checksum_value"] = ""
+    data["transfer_checksum_verification"] = ""
+    data["transfer_started_on"] = ""
+    data["transfer_completed_on"] = ""
+    data["transfer_source"] = ""
+    data["transfer_destination"] = ""
+
+    logger.debug(f"Dumping to table={CatalogueItem.__tablename__}")
     try:
         _ = data.to_sql(
             name=CatalogueItem.__tablename__,
@@ -161,6 +187,7 @@ def upload_csv():
         abort_json(400, error="UPLOAD_FAILED", message="Dumping to sql table failed!")
 
     logger.info("CatalogueItem table updated Successfully!")
+
     clean_files([fpath])
     return jsonify({"message": "success"}), 200
 

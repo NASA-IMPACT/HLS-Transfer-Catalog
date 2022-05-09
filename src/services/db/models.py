@@ -13,9 +13,11 @@ class CatalogueItem(db.Model):
     Ingestion date is when the file was processed/added to the dataset.
     Content start/end is when the data was sensed.
 
+    The column prefixed with "transfer_" are used to track transfer info.
+
     """
 
-    __tablename__ = f"{TABLE_PREFIX}catalogueitem"
+    __tablename__ = f"{TABLE_PREFIX}catalogue_item"
     uuid = db.Column(db.String, primary_key=True)
     name = db.Column(db.String)
     content_length = db.Column(db.BIGINT)
@@ -25,21 +27,12 @@ class CatalogueItem(db.Model):
     checksum_algorithm = db.Column(db.String)
     checksum_value = db.Column(db.String)
 
-
-class TransferInfo(db.Model):
-    """
-    This stores the tracking information
-    for each file to be transferred.
-
-    Each file is identified by `catalogue_uuid` value.
-    """
-
-    __tablename__ = f"{TABLE_PREFIX}transfer_info"
-    transfer_id = db.Column(db.String, primary_key=True)
-    catalogue_uuid = db.Column(db.String)
-    status = db.Column(db.String)  # IN-PROGRESS/COMPLETED/TODO
-    checksum_verification = db.Column(db.String(10))  # GOOD/BAD
-    started_on = db.Column(db.DateTime)
-    completed_on = db.Column(db.DateTime)
-    source = db.Column(db.String, nullable=True)  # ESA/NASA?
-    destination = db.Column(db.String, nullable=True)  # ESA/NASA
+    transfer_status = db.Column(
+        db.String, default="NOT_STARTED"
+    )  # NOT_STARTED/IN_PROGRESS/COMPLETED/FAILED
+    transfer_checksum_value = db.Column(db.String, nullable=True)
+    transfer_checksum_verification = db.Column(db.String(20), nullable=True)
+    transfer_started_on = db.Column(db.DateTime, nullable=True)
+    transfer_completed_on = db.Column(db.DateTime, nullable=True)
+    transfer_source = db.Column(db.String, nullable=True)
+    transfer_destination = db.Column(db.String, nullable=True)
