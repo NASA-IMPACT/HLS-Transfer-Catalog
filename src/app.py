@@ -51,6 +51,27 @@ def get_catalogue(uuid: str):
     return jsonify(res)
 
 
+@app.route("/catalogue/", methods=["GET"])
+def list_catalogue():
+    """
+    This API is used to select the CatalogueItem table based on quer fitlers:
+        - status
+    """
+    logger.info("/catalogue/ - GET called")
+    status = (
+        request.args.get("transfer_status", TransferStatus.NOT_STARTED.value)
+        .strip()
+        .upper()
+    )
+    logger.debug(f"status = {status}")
+
+    res = CatalogueItem.query.filter(CatalogueItem.transfer_status == status)
+    res = CatalogueItemSchema(many=True).dump(res)
+    logger.debug(f"Total rows selected = {len(res)}")
+
+    return jsonify(res)
+
+
 @app.route("/catalogue/", methods=["POST"])
 def create_catalogue():
     """
@@ -106,6 +127,9 @@ def patch_catalogue(uuid: str):
         abort_json(400, error="PATCH_FAILED", message="uuid doesn't exist!")
 
     try:
+
+        if "transfer_status" in data:
+            data["transfer_status"] = data["transfer_status"].upper()
         item.update(data)
     except:
         abort_json(
@@ -128,27 +152,6 @@ def delete_catalogue(uuid: str):
     res = CatalogueItemSchema().dump(item)
     db.session.delete(item)
     db.session.commit()
-    return jsonify(res)
-
-
-@app.route("/catalogue/bulk/", methods=["GET"])
-def list_catalogue():
-    """
-    This API is used to select the CatalogueItem table based on quer fitlers:
-        - status
-    """
-    logger.info("/catalogue/ - GET called")
-    status = (
-        request.args.get("transfer_status", TransferStatus.NOT_STARTED.value)
-        .strip()
-        .upper()
-    )
-    logger.debug(f"status = {status}")
-
-    res = CatalogueItem.query.filter(CatalogueItem.transfer_status == status)
-    res = CatalogueItemSchema(many=True).dump(res)
-    logger.debug(f"Total rows selected = {len(res)}")
-
     return jsonify(res)
 
 
