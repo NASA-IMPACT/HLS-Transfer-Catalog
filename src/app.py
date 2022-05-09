@@ -85,6 +85,43 @@ def list_catalogue():
     return jsonify(res)
 
 
+@app.route("/catalogue/", methods=["PATCH"])
+def update_catalogue():
+    """
+    This API is used to UPSERT the CatalogueItem values
+
+    The expected JSON input to request is of the form:
+        ..code-block:: json
+
+            {
+                <uuid1>: {<json>},
+                <uuid2>: {<json>},
+            }
+    where uuid represents the catalogue item uuid value (unique) and json
+    consists of fields and corresponding valeus to be updated.
+
+    TODO:
+        - sanity check timestamp?
+        - convert datetime to datetime
+    """
+    data = request.json
+    failed, success = [], []
+    if data:
+        query = CatalogueItem.query.filter(CatalogueItem.uuid.in_(data.keys()))
+        for d in query:
+            try:
+                d.update(data.get(d.uuid))
+                success.append(d.uuid)
+            except:
+                failed.append(d.uuid)
+    db.session.commit()
+
+    failed = list(data.keys()) if (not failed and not success) else failed
+    logger.debug(f"success: {len(success)} | failed: {len(failed)}")
+
+    return jsonify(dict(failed=failed, succes=success))
+
+
 @app.route("/catalogue/upload/", methods=["POST"])
 def upload_csv():
     """
@@ -102,6 +139,7 @@ def upload_csv():
 
     TODO:
         - optimize csv loader for a very large CSV
+        - optimize csv dump to database
     """
     logger.info("/catalogue/upload/ POST called")
     fname = uuid.uuid4().hex

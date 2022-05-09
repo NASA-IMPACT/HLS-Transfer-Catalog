@@ -36,3 +36,8 @@ class CatalogueItem(db.Model):
     transfer_completed_on = db.Column(db.DateTime, nullable=True)
     transfer_source = db.Column(db.String, nullable=True)
     transfer_destination = db.Column(db.String, nullable=True)
+
+    def update(self, data: dict) -> None:
+        for k, v in data.items():
+            if hasattr(self, k):
+                setattr(self, k, v)
