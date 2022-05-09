@@ -4,6 +4,10 @@ from .models import CatalogueItem
 
 
 class CatalogueItemSchema(SQLAlchemySchema):
+    """
+    This is used for serialization
+    """
+
     class Meta:
         model = CatalogueItem
         load_instance = True
@@ -23,3 +27,6 @@ class CatalogueItemSchema(SQLAlchemySchema):
     transfer_completed_on = fields.fields.String()
     transfer_source = auto_field()
     transfer_destination = auto_field()
+
+    created_on = fields.fields.String()
+    updated_on = fields.fields.String()

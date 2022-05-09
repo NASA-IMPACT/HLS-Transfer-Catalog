@@ -1,5 +1,6 @@
 import os
 import uuid
+from datetime import datetime
 
 import pandas as pd
 from dateutil import parser as dt_parser
@@ -8,6 +9,7 @@ from flask_cors import CORS
 from loguru import logger
 
 from src.config import CONFIG_BY_ENV
+from src.services.db.enums import TransferStatus
 from src.services.db.models import CatalogueItem, db
 from src.services.db.schema import CatalogueItemSchema
 from src.utils import abort_json, clean_files
@@ -36,46 +38,111 @@ os.makedirs("tmp", exist_ok=True)
 logger.info("Server up and running...")
 
 
-# @app.route("/catalogue/", methods=["GET"])
-# def list_catalogue():
-#     start_date = request.args.get("start_date", "").strip()
-#     end_date = request.args.get("end_date", "").strip()
-
-#     try:
-#         start_date = dt_parser.parse(start_date)
-#     except:
-#         logger.error("Failed to parse start_date...")
-#         start_date = None
-
-#     try:
-#         end_date = dt_parser.parse(end_date)
-#     except:
-#         logger.error("Failed to parse end_date...")
-#         end_date = None
-
-#     logger.debug(f"start_date: {start_date}, end_date: {end_date}")
-
-#     res = CatalogueItem.query
-#     if start_date:
-#         res = res.filter(CatalogueItem.ingestion_date >= start_date)
-#     if end_date:
-#         res = res.filter(CatalogueItem.ingestion_date <= end_date)
-#     res = res.all()
-
-#     res = CatalogueItemSchema(many=True).dump(res)
-#     logger.debug(f"Total rows selected = {len(res)}")
-
-#     return jsonify(res)
+@app.route("/catalogue/<uuid>/", methods=["GET"])
+def get_catalogue(uuid: str):
+    """
+    GET single item from the database
+    """
+    logger.info("/catalogue/<uuid> GET called")
+    res = CatalogueItem.query.filter_by(uuid=uuid).first()
+    if not res:
+        abort_json(400, error="DATA_NOT_FOUND", message="Item not found!")
+    res = CatalogueItemSchema().dump(res)
+    return jsonify(res)
 
 
-@app.route("/catalogue/", methods=["GET"])
+@app.route("/catalogue/", methods=["POST"])
+def create_catalogue():
+    """
+    Create single catalog item record and return the created record.
+    """
+    logger.info("/catalogue/ GET called")
+    data = request.json
+
+    mandatory_fields = ["name", "checksum_algorithm", "checksum_value"]
+    for field in mandatory_fields:
+        if field not in data:
+            abort_json(
+                400,
+                error="INSERTION_FAILED",
+                message=f"Missing '{field}' in the json body...",
+            )
+    data["uuid"] = data.get("uuid", uuid.uuid4().hex)
+    data["created_on"] = data.get("created_on", datetime.now())
+    data["updated_on"] = data.get("updated_on", datetime.now())
+
+    query = CatalogueItem.query.filter_by(uuid=data["uuid"]).first()
+    if query:
+        abort_json(
+            400,
+            error="INSERTION_FAILED",
+            message=f"uuid={data['uuid']} already exists!",
+        )
+
+    try:
+        item = CatalogueItem(**data)
+        db.session.add(item)
+        db.session.commit()
+    except:
+        abort_json(
+            400,
+            error="INSERTION_FAILED",
+            message="Unable to create the catalogue item...",
+        )
+
+    return jsonify(data)
+
+
+@app.route("/catalogue/<uuid>/", methods=["PATCH"])
+def patch_catalogue(uuid: str):
+    """
+    Upsert a single catalogue item.
+    """
+    logger.info("/catalogue/<uuid> PATCH called")
+    data = request.json
+
+    item = CatalogueItem.query.filter_by(uuid=uuid).first()
+    if not item:
+        abort_json(400, error="PATCH_FAILED", message="uuid doesn't exist!")
+
+    try:
+        item.update(data)
+    except:
+        abort_json(
+            400,
+            error="PATCH_FAILED",
+            message="Unable to create the catalogue item...",
+        )
+
+    db.session.commit()
+    return jsonify(CatalogueItemSchema().dump(item))
+
+
+@app.route("/catalogue/<uuid>/", methods=["DELETE"])
+def delete_catalogue(uuid: str):
+    item = CatalogueItem.query.filter_by(uuid=uuid).first()
+    if not item:
+        logger.error(f"Item for uuid={uuid} not found!")
+        abort_json(400, error="DELETION_FAILED", message="uuid doesn't exist!")
+
+    res = CatalogueItemSchema().dump(item)
+    db.session.delete(item)
+    db.session.commit()
+    return jsonify(res)
+
+
+@app.route("/catalogue/bulk/", methods=["GET"])
 def list_catalogue():
     """
     This API is used to select the CatalogueItem table based on quer fitlers:
         - status
     """
     logger.info("/catalogue/ - GET called")
-    status = request.args.get("transfer_status", "NOT_STARTED").strip().upper()
+    status = (
+        request.args.get("transfer_status", TransferStatus.NOT_STARTED.value)
+        .strip()
+        .upper()
+    )
     logger.debug(f"status = {status}")
 
     res = CatalogueItem.query.filter(CatalogueItem.transfer_status == status)
@@ -85,10 +152,10 @@ def list_catalogue():
     return jsonify(res)
 
 
-@app.route("/catalogue/", methods=["PATCH"])
-def update_catalogue():
+@app.route("/catalogue/bulk/", methods=["PATCH"])
+def bulk_update_catalogue():
     """
-    This API is used to UPSERT the CatalogueItem values
+    This API is used to bulk UPSERT the CatalogueItem values
 
     The expected JSON input to request is of the form:
         ..code-block:: json
@@ -122,7 +189,7 @@ def update_catalogue():
     return jsonify(dict(failed=failed, succes=success))
 
 
-@app.route("/catalogue/upload/", methods=["POST"])
+@app.route("/catalogue/bulk/csv/", methods=["POST"])
 def upload_csv():
     """
     Endpoint to upload CSV and update catalogeitem table
@@ -140,6 +207,7 @@ def upload_csv():
     TODO:
         - optimize csv loader for a very large CSV
         - optimize csv dump to database
+        - async upload
     """
     logger.info("/catalogue/upload/ POST called")
     fname = uuid.uuid4().hex
@@ -210,6 +278,9 @@ def upload_csv():
     data["transfer_completed_on"] = ""
     data["transfer_source"] = ""
     data["transfer_destination"] = ""
+
+    data["created_on"] = datetime.now()
+    data["updated_on"] = datetime.now()
 
     logger.debug(f"Dumping to table={CatalogueItem.__tablename__}")
     try:

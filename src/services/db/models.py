@@ -1,4 +1,8 @@
+from datetime import datetime
+
 from flask_sqlalchemy import SQLAlchemy
+
+from .enums import TransferStatus
 
 db = SQLAlchemy()
 
@@ -27,9 +31,7 @@ class CatalogueItem(db.Model):
     checksum_algorithm = db.Column(db.String)
     checksum_value = db.Column(db.String)
 
-    transfer_status = db.Column(
-        db.String, default="NOT_STARTED"
-    )  # NOT_STARTED/IN_PROGRESS/COMPLETED/FAILED
+    transfer_status = db.Column(db.String, default=TransferStatus.NOT_STARTED.value)
     transfer_checksum_value = db.Column(db.String, nullable=True)
     transfer_checksum_verification = db.Column(db.String(20), nullable=True)
     transfer_started_on = db.Column(db.DateTime, nullable=True)
@@ -37,7 +39,18 @@ class CatalogueItem(db.Model):
     transfer_source = db.Column(db.String, nullable=True)
     transfer_destination = db.Column(db.String, nullable=True)
 
+    created_on = db.Column(db.DateTime, server_default=db.func.now())
+    updated_on = db.Column(
+        db.DateTime, server_default=db.func.now(), server_onupdate=db.func.now()
+    )
+
     def update(self, data: dict) -> None:
+        """
+        Update through external dict.
+        """
+        if not data:
+            return
         for k, v in data.items():
             if hasattr(self, k):
                 setattr(self, k, v)
+                self.updated_on = datetime.now()
