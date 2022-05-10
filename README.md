@@ -63,7 +63,7 @@ Enables anyone to fetch catalogue metadata items. We can use 2 query params to f
 curl --location --request GET 'http://localhost:8000/catalogue/?page=1&transfer_status=NOT_STARTED'
 ```
 
-## 3)  /catalogue/<uuid>/ - GET single item
+## 3)  /catalogue/uuid/ - GET single item
 
 ```bash
 curl --location --request GET 'http://localhost:8000/catalogue/testid123/'
@@ -87,7 +87,7 @@ curl --location --request POST 'http://localhost:8000/catalogue/' \
 
 > Note: The json data should have `name`, `checksum_value` and `checksum_algorithm` mandatory. If `uuid is provided in the json data, it will be re-used. If not, new uuid will be created.`
 
-## 5) /catalogue/<uuid>/ - PATCH single item
+## 5) /catalogue/uuid/ - PATCH single item
 
 Used for updating a specific catalogue item referenced by the given uuid.
 
@@ -100,7 +100,7 @@ curl --location --request PATCH 'http://localhost:8000/catalogue/testid123/' \
 }'
 ```
 
-## 6) /catalogue/<uuid>/ - DELETE single item
+## 6) /catalogue/uuid/ - DELETE single item
 
 Delets a given catalogue item
 
