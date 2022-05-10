@@ -30,30 +30,101 @@ Or, set environment variables:
 - `DB_USER`
 - `DB_PASSWORD`
 - `DB_TYPE` (defaults to "postgresql")
+- `ITEMS_PER_PAGE` (defaults to 1000)
 
 ## Run
 
 Run gunicorn : `gunicorn --bind 0.0.0.0:$PORT --workers=1 --threads=8 src.app:app --timeout=900`
 [make sure to set the port to anything (like: 8000)]
 
-# Request test
+# API Request test
 
-There are few endpoints currently:
+Currently, we provide full CRUD REST api for the catalog tables.
 
-# 1) `/catalogue/upload/` - POST
+(Note: Following curl examples are for local server. Please, change the endpooints accordingly to point to remote.)
 
-Enables anyone to upload csv of specific format to populate the catalogue table)
+## 1) /catalogue/bulkd/csv - POST, Upload CSV
+
+Enables anyone to upload csv of specific format to populate the catalogue table in bulk.
 
 ```bash
-curl --location --request POST 'http://localhost:8000/catalogue/upload/' \
---form 'csv=@"<path to csv>"'
+curl --location --request POST 'http://localhost:8000/catalogue/bulk/csv/' \
+--form 'csv=@"/Users/nishparadox/Downloads/test.csv"'
 ```
 
-# 2) `/catalogue/` - GET
+## 2) /catalogue/ - GET, all items
 
-enables anyone to fetch catalogue metadata items. It also has `start_date` and `ènd_date` query filter)
+Enables anyone to fetch catalogue metadata items. We can use 2 query params to filter the result:
+- `transfer_status` - NOT_STARTED/COMPLETED/FAILED/IN_PROGRESS
+- `page` - Used for pagination
 
 
 ```bash
-curl --location --request GET 'http://localhost:8000/catalogue/?start_date=2021-11-01&end_date=2021-12-12'
+curl --location --request GET 'http://localhost:8000/catalogue/?page=1&transfer_status=NOT_STARTED'
+```
+
+## 3)  /catalogue/<uuid>/ - GET single item
+
+```bash
+curl --location --request GET 'http://localhost:8000/catalogue/testid123/'
+```
+
+## 4) /catalogue/ - POST single item
+
+This  is used to create a single catalogue item to the database
+
+```bash
+curl --location --request POST 'http://localhost:8000/catalogue/' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "uuid": "8e547de43cbf43a3a50dffb81d255bb2",
+    "transfer_status": "failed",
+    "name": "test",
+    "checksum_algorithm": "test",
+    "checksum_value": "test"
+}'
+```
+
+> Note: The json data should have `name`, `checksum_value` and `checksum_algorithm` mandatory. If `uuid is provided in the json data, it will be re-used. If not, new uuid will be created.`
+
+## 5) /catalogue/<uuid>/ - PATCH single item
+
+Used for updating a specific catalogue item referenced by the given uuid.
+
+```bash
+curl --location --request PATCH 'http://localhost:8000/catalogue/testid123/' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "test",
+    "transfer_status": "NOT_STARTED"
+}'
+```
+
+## 6) /catalogue/<uuid>/ - DELETE single item
+
+Delets a given catalogue item
+
+```
+curl --location --request DELETE 'http://localhost:8000/catalogue/testid123/'
+```
+
+
+## 7) /catalogue/bulk/ - PATCH multiple items
+
+Used for updating multiple items in a single request.
+
+```bash
+curl --location --request PATCH 'http://localhost:8000/catalogue/bulk/' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "abcde": {}
+}'
+```
+
+Here the json data posted is of the structure:
+```json
+{
+    <uuid1>: {<json>},
+    <uuid2>: {<json>},
+}
 ```
