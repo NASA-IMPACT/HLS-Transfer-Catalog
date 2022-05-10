@@ -8,6 +8,7 @@ class BaseConfig:
     DB_USER = os.getenv("DB_USER")
     DB_PASSWORD = os.getenv("DB_PASSWORD")
     DB_TYPE = os.getenv("DB_TYPE", "postgresql")
+    ITEMS_PER_PAGE = int(os.getenv("ITEMS_PER_PAGE", 1000))
 
 
 class LocalConfig(BaseConfig):

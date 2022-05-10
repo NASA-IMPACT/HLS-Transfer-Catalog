@@ -54,8 +54,9 @@ def get_catalogue(uuid: str):
 @app.route("/catalogue/", methods=["GET"])
 def list_catalogue():
     """
-    This API is used to select the CatalogueItem table based on quer fitlers:
-        - status
+    This API is used to select the CatalogueItem table based on query fitlers:
+        - transfer_status (reference: `services.db.enums.TransferStatus`)
+        - page (used for pagination)
     """
     logger.info("/catalogue/ - GET called")
     status = (
@@ -63,10 +64,23 @@ def list_catalogue():
         .strip()
         .upper()
     )
+
+    page = 1
+    try:
+        page = int(request.args.get("page", 1))
+    except:
+        logger.warning("Defaulting page to 1")
+        page = 1
+
+    logger.debug(f"page = {page}")
     logger.debug(f"status = {status}")
 
-    res = CatalogueItem.query.filter(CatalogueItem.transfer_status == status)
-    res = CatalogueItemSchema(many=True).dump(res)
+    res = CatalogueItem.query.filter_by(transfer_status=status).paginate(
+        page=page,
+        per_page=CFG.ITEMS_PER_PAGE,
+        error_out=False,
+    )
+    res = CatalogueItemSchema(many=True).dump(res.items)
     logger.debug(f"Total rows selected = {len(res)}")
 
     return jsonify(res)
@@ -77,7 +91,7 @@ def create_catalogue():
     """
     Create single catalog item record and return the created record.
     """
-    logger.info("/catalogue/ GET called")
+    logger.info("/catalogue/ POST called")
     data = request.json
 
     mandatory_fields = ["name", "checksum_algorithm", "checksum_value"]
