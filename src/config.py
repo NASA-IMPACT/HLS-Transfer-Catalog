@@ -9,7 +9,7 @@ class BaseConfig:
     DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
     DB_TYPE = os.getenv("DB_TYPE", "postgresql")
     ITEMS_PER_PAGE = int(os.getenv("ITEMS_PER_PAGE", 1000))
-    JWT_SECRET_KEY = "4f7dad0650214bd59a2a8d778d447f4b"
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "4f7dad0650214bd59a2a8d778d447f4b")
 
 
 class LocalConfig(BaseConfig):
