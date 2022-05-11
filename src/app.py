@@ -8,13 +8,12 @@ from dateutil import parser as dt_parser
 from flask import Flask, abort, g, jsonify, request, make_response
 from flask_cors import CORS
 from loguru import logger
-from functools import wraps
 
 from src.config import CONFIG_BY_ENV
 from src.services.db.enums import TransferStatus
 from src.services.db.models import CatalogueItem, db
 from src.services.db.schema import CatalogueItemSchema
-from src.utils import abort_json, clean_files
+from src.utils import abort_json, clean_files, token_required
 
 ENV = os.getenv("FLASK_ENV", "local")
 
@@ -40,32 +39,7 @@ os.makedirs("tmp", exist_ok=True)
 
 logger.info("Server up and running...")
 
-def token_required(func):
-    # decorator factory which invoks update_wrapper() method and passes decorated function as an argument
-    @wraps(func)
-    def decorated(*args, **kwargs):
-        token = request.args.get('token')
-        if not token:
-            abort_json(
-            400,
-            error="AUTHENTICATION_FAILED",
-            message="Token is missing!",
-            )
-        try:
-            logger.info("Validating JWT token")
-            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms='HS256')
-        # You can use the JWT errors in exception
-        # except jwt.InvalidTokenError:
-        #     return 'Invalid token. Please log in again.'
-        except:
-            abort_json(
-            403,
-            error="AUTHENTICATION_FAILED",
-            message="Invalid token!",
-            )
-        return func(*args, **kwargs)
-    return decorated
-
+# TODO: Need to decide on the approach of single jwt token / individual jwt token based on user credentails
 @app.route('/login', methods=['POST'])
 def login():
     request_data = request.get_json()
@@ -74,7 +48,7 @@ def login():
         token = jwt.encode({
             'user': request_data['username'],
             'password': request_data['password'],
-            # don't foget to wrap it in str function, otherwise it won't work [ i struggled with this one! ]
+            # TODO: Need to externalize the expiry duration     
             'expiration': str(datetime.utcnow() + timedelta(days=60)),
             'algorithm': 'HS256'
         },
