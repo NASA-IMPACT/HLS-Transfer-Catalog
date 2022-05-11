@@ -1,14 +1,15 @@
 import os
-import jwt
-
+from functools import wraps
 from typing import List
 
+import jwt
 from flask import abort, jsonify, request
 from loguru import logger
-from functools import wraps
+
 from src.config import CONFIG_BY_ENV
 
 CFG = CONFIG_BY_ENV[os.getenv("FLASK_ENV", "local")]
+
 
 def clean_files(paths: List[str]) -> bool:
     for path in paths:
@@ -35,25 +36,27 @@ def abort_json(status_code, error="", message="", status="fail"):
     response.status_code = status_code
     abort(response)
 
+
 def token_required(func):
     # decorator factory which invoks update_wrapper() method and passes decorated function as an argument
     @wraps(func)
     def decorated(*args, **kwargs):
-        token = request.args.get('token')
+        token = request.headers.get("token")
         if not token:
             abort_json(
-            400,
-            error="AUTHENTICATION_FAILED",
-            message="Token is missing!",
+                400,
+                error="AUTHENTICATION_FAILED",
+                message="Token is missing!",
             )
         try:
             logger.info("Validating JWT token")
-            data = jwt.decode(token, CFG.JWT_SECRET_KEY, algorithms='HS256')
+            data = jwt.decode(token, CFG.JWT_SECRET_KEY, algorithms="HS256")
         except:
             abort_json(
-            403,
-            error="AUTHENTICATION_FAILED",
-            message="Invalid token!",
+                403,
+                error="AUTHENTICATION_FAILED",
+                message="Invalid token!",
             )
         return func(*args, **kwargs)
+
     return decorated

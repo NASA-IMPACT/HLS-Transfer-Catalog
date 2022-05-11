@@ -1,9 +1,9 @@
 import os
 import uuid
+from datetime import datetime, timedelta
+
 import jwt
 import pandas as pd
-
-from datetime import datetime, timedelta
 from dateutil import parser as dt_parser
 from flask import Flask, abort, g, jsonify, request
 from flask_cors import CORS
@@ -25,7 +25,7 @@ logger.info("Starting the server...")
 app = Flask(__name__)
 app.config["DEBUG"] = True
 app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
-app.config['SECRET_KEY'] = CFG.JWT_SECRET_KEY
+app.config["SECRET_KEY"] = CFG.JWT_SECRET_KEY
 
 CORS(app)
 
@@ -40,21 +40,25 @@ os.makedirs("tmp", exist_ok=True)
 logger.info("Server up and running...")
 
 # TODO: Need to decide on the approach of single jwt token / individual jwt token based on user credentails
-@app.route('/login', methods=['POST'])
+@app.route("/catalogue/login/", methods=["POST"])
 def login():
     request_data = request.get_json()
-    if request_data['username'] and request_data['password']:
+    if request_data["username"] and request_data["password"]:
         logger.info("Generating JWT Token")
-        token = jwt.encode({
-            'user': request_data['username'], 
-            'password': request_data['password'],          
-            # TODO: Need to externalize the expiry duration     
-            'expiration': str(datetime.utcnow() + timedelta(seconds=60))
-        },
-            app.config['SECRET_KEY'], 'HS256')
-        return jsonify({'token': token})
+        token = jwt.encode(
+            {
+                "user": request_data["username"],
+                "password": request_data["password"],
+                # TODO: Need to externalize the expiry duration
+                "expiration": str(datetime.utcnow() + timedelta(seconds=60)),
+            },
+            app.config["SECRET_KEY"],
+            "HS256",
+        )
+        return jsonify({"token": token})
     else:
         abort_json(403, error="AUTHENTICATION_FAILED", message="Unable to verify")
+
 
 @app.route("/catalogue/<uuid>/", methods=["GET"])
 @token_required
@@ -68,6 +72,7 @@ def get_catalogue(uuid: str):
         abort_json(400, error="DATA_NOT_FOUND", message="Item not found!")
     res = CatalogueItemSchema().dump(res)
     return jsonify(res)
+
 
 @app.route("/catalogue/", methods=["GET"])
 @token_required
@@ -346,6 +351,7 @@ def upload_csv():
 @app.route("/health/", methods=["GET"])
 def health():
     return "Catalogue server v1 api!"
+
 
 if __name__ == "__main__":
     app.run()
