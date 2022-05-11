@@ -1,12 +1,14 @@
 import os
 import uuid
-from datetime import datetime
-
+import jwt
 import pandas as pd
+
+from datetime import datetime, timedelta
 from dateutil import parser as dt_parser
-from flask import Flask, abort, g, jsonify, request
+from flask import Flask, abort, g, jsonify, request, make_response
 from flask_cors import CORS
 from loguru import logger
+from functools import wraps
 
 from src.config import CONFIG_BY_ENV
 from src.services.db.enums import TransferStatus
@@ -24,6 +26,7 @@ logger.info("Starting the server...")
 app = Flask(__name__)
 app.config["DEBUG"] = True
 app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
+app.config['SECRET_KEY'] = CFG.JWT_SECRET_KEY
 
 CORS(app)
 
@@ -37,8 +40,51 @@ os.makedirs("tmp", exist_ok=True)
 
 logger.info("Server up and running...")
 
+def token_required(func):
+    # decorator factory which invoks update_wrapper() method and passes decorated function as an argument
+    @wraps(func)
+    def decorated(*args, **kwargs):
+        token = request.args.get('token')
+        if not token:
+            abort_json(
+            400,
+            error="AUTHENTICATION_FAILED",
+            message="Token is missing!",
+            )
+        try:
+            logger.info("Validating JWT token")
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms='HS256')
+        # You can use the JWT errors in exception
+        # except jwt.InvalidTokenError:
+        #     return 'Invalid token. Please log in again.'
+        except:
+            abort_json(
+            403,
+            error="AUTHENTICATION_FAILED",
+            message="Invalid token!",
+            )
+        return func(*args, **kwargs)
+    return decorated
+
+@app.route('/login', methods=['POST'])
+def login():
+    request_data = request.get_json()
+    if request_data['username'] and request_data['password']:
+        logger.info("Generating JWT Token")
+        token = jwt.encode({
+            'user': request_data['username'],
+            'password': request_data['password'],
+            # don't foget to wrap it in str function, otherwise it won't work [ i struggled with this one! ]
+            'expiration': str(datetime.utcnow() + timedelta(days=60)),
+            'algorithm': 'HS256'
+        },
+            app.config['SECRET_KEY'])
+        return jsonify({'token': token})
+    else:
+        return make_response('Unable to verify', 403, {'WWW-Authenticate': 'Basic realm: "Authentication Failed "'})
 
 @app.route("/catalogue/<uuid>/", methods=["GET"])
+@token_required
 def get_catalogue(uuid: str):
     """
     GET single item from the database
@@ -50,8 +96,8 @@ def get_catalogue(uuid: str):
     res = CatalogueItemSchema().dump(res)
     return jsonify(res)
 
-
 @app.route("/catalogue/", methods=["GET"])
+@token_required
 def list_catalogue():
     """
     This API is used to select the CatalogueItem table based on query fitlers:
@@ -87,6 +133,7 @@ def list_catalogue():
 
 
 @app.route("/catalogue/", methods=["POST"])
+@token_required
 def create_catalogue():
     """
     Create single catalog item record and return the created record.
@@ -130,6 +177,7 @@ def create_catalogue():
 
 
 @app.route("/catalogue/<uuid>/", methods=["PATCH"])
+@token_required
 def patch_catalogue(uuid: str):
     """
     Upsert a single catalogue item.
@@ -158,6 +206,7 @@ def patch_catalogue(uuid: str):
 
 
 @app.route("/catalogue/<uuid>/", methods=["DELETE"])
+@token_required
 def delete_catalogue(uuid: str):
     item = CatalogueItem.query.filter_by(uuid=uuid).first()
     if not item:
@@ -171,6 +220,7 @@ def delete_catalogue(uuid: str):
 
 
 @app.route("/catalogue/bulk/", methods=["PATCH"])
+@token_required
 def bulk_update_catalogue():
     """
     This API is used to bulk UPSERT the CatalogueItem values
@@ -208,6 +258,7 @@ def bulk_update_catalogue():
 
 
 @app.route("/catalogue/bulk/csv/", methods=["POST"])
+@token_required
 def upload_csv():
     """
     Endpoint to upload CSV and update catalogeitem table
@@ -322,7 +373,6 @@ def upload_csv():
 @app.route("/health/", methods=["GET"])
 def health():
     return "Catalogue server v1 api!"
-
 
 if __name__ == "__main__":
     app.run()
