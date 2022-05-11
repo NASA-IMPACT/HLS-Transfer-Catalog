@@ -50,7 +50,7 @@ def login():
                 "user": request_data["username"],
                 "password": request_data["password"],
                 # TODO: Need to externalize the expiry duration
-                "expiration": str(datetime.utcnow() + timedelta(seconds=60)),
+                "expiration": str(datetime.now() + timedelta(seconds=10)),
             },
             app.config["SECRET_KEY"],
             "HS256",
