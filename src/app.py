@@ -40,7 +40,7 @@ os.makedirs("tmp", exist_ok=True)
 logger.info("Server up and running...")
 
 # TODO: Need to decide on the approach of single jwt token / individual jwt token based on user credentails
-@app.route("/catalogue/login/", methods=["POST"])
+@app.route("/auth/login/", methods=["POST"])
 def login():
     request_data = request.get_json()
     if request_data["username"] and request_data["password"]:
