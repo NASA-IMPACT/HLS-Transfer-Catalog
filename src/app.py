@@ -55,7 +55,7 @@ def login():
             app.config['SECRET_KEY'])
         return jsonify({'token': token})
     else:
-        return make_response('Unable to verify', 403, {'WWW-Authenticate': 'Basic realm: "Authentication Failed "'})
+        abort_json(403, error="AUTHENTICATION_FAILED", message="Unable to verify")
 
 @app.route("/catalogue/<uuid>/", methods=["GET"])
 @token_required
