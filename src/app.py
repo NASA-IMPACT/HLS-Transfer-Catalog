@@ -5,7 +5,7 @@ import pandas as pd
 
 from datetime import datetime, timedelta
 from dateutil import parser as dt_parser
-from flask import Flask, abort, g, jsonify, request, make_response
+from flask import Flask, abort, g, jsonify, request
 from flask_cors import CORS
 from loguru import logger
 
