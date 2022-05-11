@@ -46,13 +46,12 @@ def login():
     if request_data['username'] and request_data['password']:
         logger.info("Generating JWT Token")
         token = jwt.encode({
-            'user': request_data['username'],
-            'password': request_data['password'],
+            'user': request_data['username'], 
+            'password': request_data['password'],          
             # TODO: Need to externalize the expiry duration     
-            'expiration': str(datetime.utcnow() + timedelta(days=60)),
-            'algorithm': 'HS256'
+            'expiration': str(datetime.utcnow() + timedelta(seconds=60))
         },
-            app.config['SECRET_KEY'])
+            app.config['SECRET_KEY'], 'HS256')
         return jsonify({'token': token})
     else:
         abort_json(403, error="AUTHENTICATION_FAILED", message="Unable to verify")
