@@ -8,7 +8,6 @@ from dateutil import parser as dt_parser
 from flask import Flask, abort, g, jsonify, request
 from flask_cors import CORS
 from loguru import logger
-from pytz import timezone
 
 from src.config import CONFIG_BY_ENV
 from src.services.db.enums import TransferStatus
