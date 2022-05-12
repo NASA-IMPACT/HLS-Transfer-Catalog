@@ -221,6 +221,7 @@ def bulk_update_catalogue():
     data = request.json
     failed, success = [], []
     if data:
+        # this will only give the data that "exists" in the table
         query = CatalogueItem.query.filter(CatalogueItem.uuid.in_(data.keys()))
         for d in query:
             try:
@@ -230,7 +231,8 @@ def bulk_update_catalogue():
                 failed.append(d.uuid)
     db.session.commit()
 
-    failed = list(data.keys()) if (not failed and not success) else failed
+    # get all thoese keys that weren't updated in the db
+    failed = list(set(data.keys()) - set(success))
     logger.debug(f"success: {len(success)} | failed: {len(failed)}")
 
     return jsonify(dict(failed=failed, succes=success))
