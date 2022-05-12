@@ -51,6 +51,12 @@ def token_required(func):
         try:
             logger.info("Validating JWT token")
             data = jwt.decode(token, CFG.JWT_SECRET_KEY, algorithms="HS256")
+        except jwt.ExpiredSignatureError:
+            abort_json(
+                403,
+                error="AUTHENTICATION_FAILED",
+                message="Token Expired!",
+            )
         except:
             abort_json(
                 403,

@@ -1,6 +1,6 @@
+import datetime
 import os
 import uuid
-from datetime import datetime, timedelta
 
 import jwt
 import pandas as pd
@@ -8,6 +8,7 @@ from dateutil import parser as dt_parser
 from flask import Flask, abort, g, jsonify, request
 from flask_cors import CORS
 from loguru import logger
+from pytz import timezone
 
 from src.config import CONFIG_BY_ENV
 from src.services.db.enums import TransferStatus
@@ -26,6 +27,7 @@ app = Flask(__name__)
 app.config["DEBUG"] = True
 app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
 app.config["SECRET_KEY"] = CFG.JWT_SECRET_KEY
+app.config["JWT_TOKEN_EXPIRATION_SECONDS"] = CFG.JWT_TOKEN_EXPIRATION_SECONDS
 
 CORS(app)
 
@@ -49,8 +51,10 @@ def login():
             {
                 "user": request_data["username"],
                 "password": request_data["password"],
-                # TODO: Need to externalize the expiry duration
-                "expiration": str(datetime.utcnow() + timedelta(seconds=60)),
+                "exp": datetime.datetime.utcnow()
+                + datetime.timedelta(
+                    seconds=app.config["JWT_TOKEN_EXPIRATION_SECONDS"]
+                ),
             },
             app.config["SECRET_KEY"],
             "HS256",
