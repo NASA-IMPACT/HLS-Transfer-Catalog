@@ -1,6 +1,6 @@
-import datetime
 import os
 import uuid
+from datetime import datetime, timedelta
 
 import jwt
 import pandas as pd
@@ -50,10 +50,8 @@ def login():
             {
                 "user": request_data["username"],
                 "password": request_data["password"],
-                "exp": datetime.datetime.utcnow()
-                + datetime.timedelta(
-                    seconds=app.config["JWT_TOKEN_EXPIRATION_SECONDS"]
-                ),
+                "exp": datetime.utcnow()
+                + timedelta(seconds=app.config["JWT_TOKEN_EXPIRATION_SECONDS"]),
             },
             app.config["SECRET_KEY"],
             "HS256",
