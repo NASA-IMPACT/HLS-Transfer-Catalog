@@ -31,6 +31,8 @@ Or, set environment variables:
 - `DB_PASSWORD`
 - `DB_TYPE` (defaults to "postgresql")
 - `ITEMS_PER_PAGE` (defaults to 1000)
+- `JWT_SECRET_KEY`
+- `JWT_TOKEN_EXPIRATION_SECONDS` (defaults to 300 seconds)
 
 ## Run
 
@@ -43,13 +45,14 @@ Currently, we provide full CRUD REST api for the catalog tables.
 
 (Note: Following curl examples are for local server. Please, change the endpooints accordingly to point to remote.)
 
-## 1) /catalogue/bulkd/csv - POST, Upload CSV
+## 1) /catalogue/bulk/csv - POST, Upload CSV
 
 Enables anyone to upload csv of specific format to populate the catalogue table in bulk.
 
 ```bash
-curl --location --request POST 'http://localhost:8000/catalogue/bulk/csv/' \
---form 'csv=@"/Users/nishparadox/Downloads/test.csv"'
+curl --location --request POST 'http://127.0.0.1:5000/catalogue/bulk/csv/' \
+--header 'token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cCI6MTY1MjMzNTgzNn0.UfKN62xWmsXTzwy7tmRbP6I9DbrtXMnidQFFLq6epfs' \
+--form 'csv=@"/Users/udaykumarbommala/Downloads/test.csv"
 ```
 
 ## 2) /catalogue/ - GET, all items
@@ -60,13 +63,15 @@ Enables anyone to fetch catalogue metadata items. We can use 2 query params to f
 
 
 ```bash
-curl --location --request GET 'http://localhost:8000/catalogue/?page=1&transfer_status=NOT_STARTED'
+curl --location --request GET 'http://127.0.0.1:5000/catalogue/?transfer_status=NOT_STARTED' \
+--header 'token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cCI6MTY1MjMzNTgzNn0.UfKN62xWmsXTzwy7tmRbP6I9DbrtXMnidQFFLq6epfs'
 ```
 
 ## 3)  /catalogue/uuid/ - GET single item
 
 ```bash
-curl --location --request GET 'http://localhost:8000/catalogue/testid123/'
+curl --location --request GET 'http://127.0.0.1:5000/catalogue/6a1f5438-50d1-4e02-a11b-52f9018da69f/' \
+--header 'token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cCI6MTY1MjMzNTgzNn0.UfKN62xWmsXTzwy7tmRbP6I9DbrtXMnidQFFLq6epfs'
 ```
 
 ## 4) /catalogue/ - POST single item
@@ -74,7 +79,8 @@ curl --location --request GET 'http://localhost:8000/catalogue/testid123/'
 This  is used to create a single catalogue item to the database
 
 ```bash
-curl --location --request POST 'http://localhost:8000/catalogue/' \
+curl --location --request POST 'http://127.0.0.1:5000/catalogue/?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cGlyYXRpb24iOiIyMDIyLTA3LTEwIDAxOjQ5OjEwLjQ4MDY0OCIsImFsZ29yaXRobSI6IkhTMjU2In0.T2UNUeZkqtZcV11LgKkGSc92RSN9aqui0cloz_ef7JY' \
+--header 'token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cCI6MTY1MjMzNTgzNn0.UfKN62xWmsXTzwy7tmRbP6I9DbrtXMnidQFFLq6epfs' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "uuid": "8e547de43cbf43a3a50dffb81d255bb2",
@@ -92,11 +98,12 @@ curl --location --request POST 'http://localhost:8000/catalogue/' \
 Used for updating a specific catalogue item referenced by the given uuid.
 
 ```bash
-curl --location --request PATCH 'http://localhost:8000/catalogue/testid123/' \
+curl --location --request PATCH 'http://127.0.0.1:5000/catalogue/c266dc7b9fad4d64aaa7d103b6f0af09/' \
+--header 'token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cCI6MTY1MjMzNTgzNn0.UfKN62xWmsXTzwy7tmRbP6I9DbrtXMnidQFFLq6epfs' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "name": "test",
-    "transfer_status": "NOT_STARTED"
+    "transfer_status": "failed"
 }'
 ```
 
@@ -104,8 +111,9 @@ curl --location --request PATCH 'http://localhost:8000/catalogue/testid123/' \
 
 Delets a given catalogue item
 
-```
-curl --location --request DELETE 'http://localhost:8000/catalogue/testid123/'
+```bash
+curl --location --request DELETE 'http://127.0.0.1:5000/catalogue/8e547de43cbf43a3a50dffb81d255bb2/' \
+--header 'token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cCI6MTY1MjMzNTgzNn0.UfKN62xWmsXTzwy7tmRbP6I9DbrtXMnidQFFLq6epfs'
 ```
 
 
@@ -114,10 +122,11 @@ curl --location --request DELETE 'http://localhost:8000/catalogue/testid123/'
 Used for updating multiple items in a single request.
 
 ```bash
-curl --location --request PATCH 'http://localhost:8000/catalogue/bulk/' \
+curl --location --request PATCH 'http://127.0.0.1:5000/catalogue/bulk/' \
+--header 'token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cCI6MTY1MjMzNTgzNn0.UfKN62xWmsXTzwy7tmRbP6I9DbrtXMnidQFFLq6epfs' \
 --header 'Content-Type: application/json' \
 --data-raw '{
-    "abcde": {}
+    "abcdef": {}
 }'
 ```
 
@@ -127,4 +136,16 @@ Here the json data posted is of the structure:
     <uuid1>: {<json>},
     <uuid2>: {<json>},
 }
+```
+
+## 8) /auth/login/ - POST Generate JWT Token
+
+Used for generating JWT token based on user credentails
+```bash
+curl --location --request POST 'http://127.0.0.1:5000/auth/login/' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "username": "username",
+    "password": "password"
+}'
 ```

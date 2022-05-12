@@ -1,7 +1,8 @@
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
+import jwt
 import pandas as pd
 from dateutil import parser as dt_parser
 from flask import Flask, abort, g, jsonify, request
@@ -12,7 +13,7 @@ from src.config import CONFIG_BY_ENV
 from src.services.db.enums import TransferStatus
 from src.services.db.models import CatalogueItem, db
 from src.services.db.schema import CatalogueItemSchema
-from src.utils import abort_json, clean_files
+from src.utils import abort_json, clean_files, token_required
 
 ENV = os.getenv("FLASK_ENV", "local")
 
@@ -24,6 +25,8 @@ logger.info("Starting the server...")
 app = Flask(__name__)
 app.config["DEBUG"] = True
 app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
+app.config["SECRET_KEY"] = CFG.JWT_SECRET_KEY
+app.config["JWT_TOKEN_EXPIRATION_SECONDS"] = CFG.JWT_TOKEN_EXPIRATION_SECONDS
 
 CORS(app)
 
@@ -37,8 +40,29 @@ os.makedirs("tmp", exist_ok=True)
 
 logger.info("Server up and running...")
 
+# TODO: Need to decide on the approach of single jwt token / individual jwt token based on user credentails
+@app.route("/auth/login/", methods=["POST"])
+def login():
+    request_data = request.get_json()
+    if request_data["username"] and request_data["password"]:
+        logger.info("Generating JWT Token")
+        token = jwt.encode(
+            {
+                "user": request_data["username"],
+                "password": request_data["password"],
+                "exp": datetime.utcnow()
+                + timedelta(seconds=app.config["JWT_TOKEN_EXPIRATION_SECONDS"]),
+            },
+            app.config["SECRET_KEY"],
+            "HS256",
+        )
+        return jsonify({"token": token})
+    else:
+        abort_json(403, error="AUTHENTICATION_FAILED", message="Unable to verify")
+
 
 @app.route("/catalogue/<uuid>/", methods=["GET"])
+@token_required
 def get_catalogue(uuid: str):
     """
     GET single item from the database
@@ -52,6 +76,7 @@ def get_catalogue(uuid: str):
 
 
 @app.route("/catalogue/", methods=["GET"])
+@token_required
 def list_catalogue():
     """
     This API is used to select the CatalogueItem table based on query fitlers:
@@ -87,6 +112,7 @@ def list_catalogue():
 
 
 @app.route("/catalogue/", methods=["POST"])
+@token_required
 def create_catalogue():
     """
     Create single catalog item record and return the created record.
@@ -130,6 +156,7 @@ def create_catalogue():
 
 
 @app.route("/catalogue/<uuid>/", methods=["PATCH"])
+@token_required
 def patch_catalogue(uuid: str):
     """
     Upsert a single catalogue item.
@@ -158,6 +185,7 @@ def patch_catalogue(uuid: str):
 
 
 @app.route("/catalogue/<uuid>/", methods=["DELETE"])
+@token_required
 def delete_catalogue(uuid: str):
     item = CatalogueItem.query.filter_by(uuid=uuid).first()
     if not item:
@@ -171,6 +199,7 @@ def delete_catalogue(uuid: str):
 
 
 @app.route("/catalogue/bulk/", methods=["PATCH"])
+@token_required
 def bulk_update_catalogue():
     """
     This API is used to bulk UPSERT the CatalogueItem values
@@ -192,6 +221,7 @@ def bulk_update_catalogue():
     data = request.json
     failed, success = [], []
     if data:
+        # this will only give the data that "exists" in the table
         query = CatalogueItem.query.filter(CatalogueItem.uuid.in_(data.keys()))
         for d in query:
             try:
@@ -201,13 +231,15 @@ def bulk_update_catalogue():
                 failed.append(d.uuid)
     db.session.commit()
 
-    failed = list(data.keys()) if (not failed and not success) else failed
+    # get all thoese keys that weren't updated in the db
+    failed = list(set(data.keys()) - set(success))
     logger.debug(f"success: {len(success)} | failed: {len(failed)}")
 
     return jsonify(dict(failed=failed, succes=success))
 
 
 @app.route("/catalogue/bulk/csv/", methods=["POST"])
+@token_required
 def upload_csv():
     """
     Endpoint to upload CSV and update catalogeitem table
