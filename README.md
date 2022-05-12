@@ -32,7 +32,7 @@ Or, set environment variables:
 - `DB_TYPE` (defaults to "postgresql")
 - `ITEMS_PER_PAGE` (defaults to 1000)
 - `JWT_SECRET_KEY`
-- JWT_TOKEN_EXPIRATION_SECONDS (defaults to 300 seconds)
+- `JWT_TOKEN_EXPIRATION_SECONDS` (defaults to 300 seconds)
 
 ## Run
 
