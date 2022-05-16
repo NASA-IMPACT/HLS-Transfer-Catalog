@@ -9,6 +9,7 @@ from flask import Flask, abort, g, jsonify, request
 from flask_cors import CORS
 from loguru import logger
 
+import src.constants as CONSTANTS
 from src.config import CONFIG_BY_ENV
 from src.services.db.enums import TransferStatus
 from src.services.db.models import CatalogueItem, db
@@ -123,8 +124,7 @@ def create_catalogue():
     logger.info("/catalogue/ POST called")
     data = request.json
 
-    mandatory_fields = ["name", "checksum_algorithm", "checksum_value"]
-    for field in mandatory_fields:
+    for field in CONSTANTS.CATALOGUE_POST_MANDATORY_FIELDS:
         if field not in data:
             abort_json(
                 400,
@@ -141,7 +141,7 @@ def create_catalogue():
         abort_json(
             400,
             error="INSERTION_FAILED",
-            message=f"uuid={data['uuid']} already exists!",
+            message="uuid already exists!",
         )
 
     try:
@@ -278,16 +278,7 @@ def upload_csv():
 
     try:
         data.rename(
-            columns={
-                "Id": "uuid",
-                "Name": "name",
-                "ContentLength": "content_length",
-                "IngestionDate": "ingestion_date",
-                "ContentDate:Start": "content_date_start",
-                "ContentDate:End": "content_date_end",
-                "Checksum:Algorithm": "checksum_algorithm",
-                "Checksum:Value": "checksum_value",
-            },
+            columns=CONSTANTS.CATALOGUE_CSV_COLUMN_MAPPER,
             inplace=True,
         )
     except:
