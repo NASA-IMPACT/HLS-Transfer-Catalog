@@ -328,20 +328,18 @@ def upload_csv():
 
     logger.debug(f"Dumping to table={CatalogueItem.__tablename__}")
     try:
-        _ = data.to_sql(
-            name=CatalogueItem.__tablename__,
-            con=db.engine,
-            index=False,
-            if_exists="replace",
-        )
+        datarows = data.to_dict(orient="records")
+        for d in datarows:
+            item = CatalogueItem(**d)
+            db.session.add(item)
+            db.session.flush()
+        db.session.commit()
     except:
         logger.error("CatalogueItem table upload failed")
-        clean_files([fpath])
         abort_json(400, error="UPLOAD_FAILED", message="Dumping to sql table failed!")
-
+    finally:
+        clean_files([fpath])
     logger.info("CatalogueItem table updated Successfully!")
-
-    clean_files([fpath])
     return jsonify({"message": "success"}), 200
 
 
