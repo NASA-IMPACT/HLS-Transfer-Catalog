@@ -11,10 +11,11 @@ class BaseConfig:
     ITEMS_PER_PAGE = int(os.getenv("ITEMS_PER_PAGE", 1000))
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
     JWT_TOKEN_EXPIRATION_SECONDS = os.getenv("JWT_TOKEN_EXPIRATION_SECONDS", 300)
+    DEBUG = os.getenv("FLASK_DEBUG", False)
 
 
 class LocalConfig(BaseConfig):
-    pass
+    DEBUG = os.getenv("FLASK_DEBUG", True)
 
 
 class TestingConfig(BaseConfig):

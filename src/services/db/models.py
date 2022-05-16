@@ -50,6 +50,11 @@ class CatalogueItem(db.Model):
         """
         if not data:
             return
+        data = data.copy()
+        data.pop("uuid", None)
+        data.pop("created_on", None)
+        data.pop("updated_on", None)
+
         for k, v in data.items():
             if hasattr(self, k):
                 setattr(self, k, v)

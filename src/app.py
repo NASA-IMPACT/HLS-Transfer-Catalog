@@ -13,17 +13,19 @@ from src.config import CONFIG_BY_ENV
 from src.services.db.enums import TransferStatus
 from src.services.db.models import CatalogueItem, db
 from src.services.db.schema import CatalogueItemSchema
-from src.utils import abort_json, clean_files, token_required
+from src.utils import abort_json, clean_files, str_to_bool, token_required
 
 ENV = os.getenv("FLASK_ENV", "local")
 
 # TODO: Raise error if values not set
 CFG = CONFIG_BY_ENV[os.getenv("FLASK_ENV", "local")]
+CFG.DEBUG = str_to_bool(CFG.DEBUG)
+
 DB_URI = f"{CFG.DB_TYPE}://{CFG.DB_USER}:{CFG.DB_PASSWORD}@{CFG.DB_HOST}:{CFG.DB_PORT}/{CFG.DB_NAME}"
 
 logger.info("Starting the server...")
 app = Flask(__name__)
-app.config["DEBUG"] = True
+app.config["DEBUG"] = CFG.DEBUG
 app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
 app.config["SECRET_KEY"] = CFG.JWT_SECRET_KEY
 app.config["JWT_TOKEN_EXPIRATION_SECONDS"] = CFG.JWT_TOKEN_EXPIRATION_SECONDS
@@ -70,7 +72,7 @@ def get_catalogue(uuid: str):
     logger.info("/catalogue/<uuid> GET called")
     res = CatalogueItem.query.filter_by(uuid=uuid).first()
     if not res:
-        abort_json(400, error="DATA_NOT_FOUND", message="Item not found!")
+        abort_json(404, error="DATA_NOT_FOUND", message="Item not found!")
     res = CatalogueItemSchema().dump(res)
     return jsonify(res)
 
@@ -94,7 +96,8 @@ def list_catalogue():
     try:
         page = int(request.args.get("page", 1))
     except:
-        logger.warning("Defaulting page to 1")
+        if app.config.get("DEBUG", False):
+            logger.warning("Defaulting page to 1")
         page = 1
 
     logger.debug(f"page = {page}")
@@ -149,7 +152,7 @@ def create_catalogue():
         abort_json(
             400,
             error="INSERTION_FAILED",
-            message="Unable to create the catalogue item...",
+            message="Unable to create the catalogue item.",
         )
 
     return jsonify(data)
@@ -166,7 +169,7 @@ def patch_catalogue(uuid: str):
 
     item = CatalogueItem.query.filter_by(uuid=uuid).first()
     if not item:
-        abort_json(400, error="PATCH_FAILED", message="uuid doesn't exist!")
+        abort_json(404, error="PATCH_FAILED", message="uuid doesn't exist!")
 
     try:
 
@@ -177,7 +180,7 @@ def patch_catalogue(uuid: str):
         abort_json(
             400,
             error="PATCH_FAILED",
-            message="Unable to create the catalogue item...",
+            message="Unable to create the catalogue item.",
         )
 
     db.session.commit()
@@ -190,7 +193,7 @@ def delete_catalogue(uuid: str):
     item = CatalogueItem.query.filter_by(uuid=uuid).first()
     if not item:
         logger.error(f"Item for uuid={uuid} not found!")
-        abort_json(400, error="DELETION_FAILED", message="uuid doesn't exist!")
+        abort_json(404, error="DELETION_FAILED", message="uuid doesn't exist!")
 
     res = CatalogueItemSchema().dump(item)
     db.session.delete(item)
@@ -212,7 +215,7 @@ def bulk_update_catalogue():
                 <uuid2>: {<json>},
             }
     where uuid represents the catalogue item uuid value (unique) and json
-    consists of fields and corresponding valeus to be updated.
+    consists of fields and corresponding values to be updated.
 
     TODO:
         - sanity check timestamp?
@@ -223,12 +226,12 @@ def bulk_update_catalogue():
     if data:
         # this will only give the data that "exists" in the table
         query = CatalogueItem.query.filter(CatalogueItem.uuid.in_(data.keys()))
-        for d in query:
+        for item in query:
             try:
-                d.update(data.get(d.uuid))
-                success.append(d.uuid)
+                item.update(data.get(item.uuid, {}))
+                success.append(item.uuid)
             except:
-                failed.append(d.uuid)
+                failed.append(item.uuid)
     db.session.commit()
 
     # get all thoese keys that weren't updated in the db

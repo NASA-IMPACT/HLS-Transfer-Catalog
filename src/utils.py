@@ -1,6 +1,6 @@
 import os
 from functools import wraps
-from typing import List
+from typing import List, Union
 
 import jwt
 from flask import abort, jsonify, request
@@ -66,3 +66,10 @@ def token_required(func):
         return func(*args, **kwargs)
 
     return decorated
+
+
+def str_to_bool(val: Union[bool, str, int, float]) -> bool:
+    if isinstance(val, (bool, int, float)):
+        return bool(val)
+    val = str(val)
+    return val.strip().lower() in ["true", "1", "t", "y", "yes"]
