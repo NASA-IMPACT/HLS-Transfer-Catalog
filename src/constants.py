@@ -1,3 +1,5 @@
+import datetime
+
 CATALOGUE_POST_MANDATORY_FIELDS = [
     "name",
     "checksum_algorithm",
@@ -14,3 +16,5 @@ CATALOGUE_CSV_COLUMN_MAPPER = {
     "Checksum:Algorithm": "checksum_algorithm",
     "Checksum:Value": "checksum_value",
 }
+
+DATETIME_OLDEST = datetime.datetime(year=1970, month=1, day=1)

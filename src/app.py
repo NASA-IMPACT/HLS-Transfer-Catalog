@@ -318,8 +318,8 @@ def upload_csv():
     data["transfer_status"] = "NOT_STARTED"
     data["transfer_checksum_value"] = ""
     data["transfer_checksum_verification"] = ""
-    data["transfer_started_on"] = ""
-    data["transfer_completed_on"] = ""
+    data["transfer_started_on"] = CONSTANTS.DATETIME_OLDEST
+    data["transfer_completed_on"] = CONSTANTS.DATETIME_OLDEST
     data["transfer_source"] = ""
     data["transfer_destination"] = ""
 
