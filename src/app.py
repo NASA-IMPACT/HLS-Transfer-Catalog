@@ -1,4 +1,5 @@
 import os
+import traceback
 import uuid
 from datetime import datetime, timedelta
 
@@ -26,6 +27,7 @@ DB_URI = f"{CFG.DB_TYPE}://{CFG.DB_USER}:{CFG.DB_PASSWORD}@{CFG.DB_HOST}:{CFG.DB
 
 logger.info("Starting the server...")
 app = Flask(__name__)
+app.config["FLASK_ENV"] = ENV
 app.config["DEBUG"] = CFG.DEBUG
 app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
 app.config["SECRET_KEY"] = CFG.JWT_SECRET_KEY
@@ -318,31 +320,47 @@ def upload_csv():
     data["transfer_status"] = "NOT_STARTED"
     data["transfer_checksum_value"] = ""
     data["transfer_checksum_verification"] = ""
-    data["transfer_started_on"] = ""
-    data["transfer_completed_on"] = ""
+    data["transfer_started_on"] = CONSTANTS.DATETIME_OLDEST
+    data["transfer_completed_on"] = CONSTANTS.DATETIME_OLDEST
     data["transfer_source"] = ""
     data["transfer_destination"] = ""
 
     data["created_on"] = datetime.now()
     data["updated_on"] = datetime.now()
 
+    uuids = list(data["uuid"])
+    items = list(map(lambda d: CatalogueItem(**d), data.to_dict("records")))
+
     logger.debug(f"Dumping to table={CatalogueItem.__tablename__}")
+
+    failed = []
     try:
-        _ = data.to_sql(
-            name=CatalogueItem.__tablename__,
-            con=db.engine,
-            index=False,
-            if_exists="replace",
-        )
+
+        existing_data = CatalogueItem.query.filter(CatalogueItem.uuid.in_(uuids))
+        existing_uuids = set(map(lambda d: d.uuid, existing_data))
+
+        to_add_uuids = set(uuids) - existing_uuids
+        to_add_data = list(filter(lambda item: item.uuid in to_add_uuids, items))
+        db.session.add_all(to_add_data)
+        db.session.commit()
+
+        failed = list(existing_uuids)
+        logger.debug(f"{len(to_add_data)}/{len(uuids)} data added.")
     except:
         logger.error("CatalogueItem table upload failed")
-        clean_files([fpath])
         abort_json(400, error="UPLOAD_FAILED", message="Dumping to sql table failed!")
-
+    finally:
+        clean_files([fpath])
     logger.info("CatalogueItem table updated Successfully!")
-
-    clean_files([fpath])
-    return jsonify({"message": "success"}), 200
+    return (
+        jsonify(
+            {
+                "message": "success",
+                "failed": {"count": len(failed), "uuids": failed},
+            }
+        ),
+        200,
+    )
 
 
 @app.route("/health/", methods=["GET"])
