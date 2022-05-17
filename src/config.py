@@ -10,7 +10,7 @@ class BaseConfig:
     DB_TYPE = os.getenv("DB_TYPE", "postgresql")
     ITEMS_PER_PAGE = int(os.getenv("ITEMS_PER_PAGE", 1000))
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-    JWT_TOKEN_EXPIRATION_SECONDS = os.getenv("JWT_TOKEN_EXPIRATION_SECONDS", 300)
+    JWT_TOKEN_EXPIRATION_SECONDS = int(os.getenv("JWT_TOKEN_EXPIRATION_SECONDS", 300))
     DEBUG = os.getenv("FLASK_DEBUG", False)
 
 
