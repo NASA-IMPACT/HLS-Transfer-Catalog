@@ -1,7 +1,6 @@
 import os
 import traceback
 import uuid
-from cmath import log
 from datetime import datetime, timedelta
 
 import jwt
@@ -91,7 +90,6 @@ def list_catalogue():
         - page (used for pagination)
     """
     logger.info("/catalogue/ - GET called")
-
     status = (
         request.args.get("transfer_status", TransferStatus.NOT_STARTED.value)
         .strip()
@@ -345,6 +343,7 @@ def upload_csv():
 
     data["created_on"] = datetime.now()
     data["updated_on"] = datetime.now()
+
     uuids = list(data["uuid"])
     items = list(map(lambda d: CatalogueItem(**d), data.to_dict("records")))
 
