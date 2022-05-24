@@ -2,7 +2,7 @@ from datetime import datetime
 
 from flask_sqlalchemy import SQLAlchemy
 
-from .enums import TransferStatus
+from .enums import SealedStatus, TransferStatus
 
 db = SQLAlchemy()
 
@@ -31,6 +31,7 @@ class CatalogueItem(db.Model):
     checksum_algorithm = db.Column(db.String)
     checksum_value = db.Column(db.String)
 
+    transfer_id = db.Column(db.String)
     transfer_status = db.Column(db.String, default=TransferStatus.NOT_STARTED.value)
     transfer_checksum_value = db.Column(db.String, nullable=True)
     transfer_checksum_verification = db.Column(db.String(20), nullable=True)
@@ -38,6 +39,10 @@ class CatalogueItem(db.Model):
     transfer_completed_on = db.Column(db.DateTime, nullable=True)
     transfer_source = db.Column(db.String, nullable=True)
     transfer_destination = db.Column(db.String, nullable=True)
+
+    sealed_state = db.Column(db.String)
+    unseal_time = db.Column(db.DateTime, nullable=True)
+    unseal_expiry_time = db.Column(db.DateTime, nullable=True)
 
     created_on = db.Column(db.DateTime, server_default=db.func.now())
     updated_on = db.Column(

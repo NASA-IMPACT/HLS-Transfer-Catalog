@@ -1,6 +1,7 @@
 import os
 import traceback
 import uuid
+from cmath import log
 from datetime import datetime, timedelta
 
 import jwt
@@ -9,10 +10,11 @@ from dateutil import parser as dt_parser
 from flask import Flask, abort, g, jsonify, request
 from flask_cors import CORS
 from loguru import logger
+from sqlalchemy import and_, asc
 
 import src.constants as CONSTANTS
 from src.config import CONFIG_BY_ENV
-from src.services.db.enums import TransferStatus
+from src.services.db.enums import SealedStatus, TransferStatus
 from src.services.db.models import CatalogueItem, db
 from src.services.db.schema import CatalogueItemSchema
 from src.utils import abort_json, clean_files, token_required
@@ -85,11 +87,18 @@ def list_catalogue():
     """
     This API is used to select the CatalogueItem table based on query fitlers:
         - transfer_status (reference: `services.db.enums.TransferStatus`)
+        - sealed_state (reference: `services.db.enums.SealedStatus`)
         - page (used for pagination)
     """
     logger.info("/catalogue/ - GET called")
+
     status = (
         request.args.get("transfer_status", TransferStatus.NOT_STARTED.value)
+        .strip()
+        .upper()
+    )
+    state = (
+        request.args.get("sealed_State", SealedStatus.PERMANENT_UNSEALED.value)
         .strip()
         .upper()
     )
@@ -104,11 +113,17 @@ def list_catalogue():
 
     logger.debug(f"page = {page}")
     logger.debug(f"status = {status}")
+    logger.debug(f"state = {state}")
 
-    res = CatalogueItem.query.filter_by(transfer_status=status).paginate(
-        page=page,
-        per_page=CFG.ITEMS_PER_PAGE,
-        error_out=False,
+    res = (
+        CatalogueItem.query.filter(
+            and_(
+                CatalogueItem.transfer_status == status,
+                CatalogueItem.sealed_state == state,
+            )
+        )
+        .order_by(asc(CatalogueItem.unseal_expiry_time))
+        .paginate(page=page, per_page=CFG.ITEMS_PER_PAGE, error_out=False)
     )
     res = CatalogueItemSchema(many=True).dump(res.items)
     logger.debug(f"Total rows selected = {len(res)}")
@@ -315,6 +330,7 @@ def upload_csv():
         )
 
     # add transfer columns
+    data["transfer_id"] = ""
     data["transfer_status"] = "NOT_STARTED"
     data["transfer_checksum_value"] = ""
     data["transfer_checksum_verification"] = ""
@@ -323,9 +339,12 @@ def upload_csv():
     data["transfer_source"] = ""
     data["transfer_destination"] = ""
 
+    data["sealed_state"] = data["sealed_state"].map(
+        CONSTANTS.CATALOGUE_SEALED_STATE_MAPPER
+    )
+
     data["created_on"] = datetime.now()
     data["updated_on"] = datetime.now()
-
     uuids = list(data["uuid"])
     items = list(map(lambda d: CatalogueItem(**d), data.to_dict("records")))
 
