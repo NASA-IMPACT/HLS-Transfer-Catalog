@@ -15,13 +15,12 @@ from src.config import CONFIG_BY_ENV
 from src.services.db.enums import TransferStatus
 from src.services.db.models import CatalogueItem, db
 from src.services.db.schema import CatalogueItemSchema
-from src.utils import abort_json, clean_files, str_to_bool, token_required
+from src.utils import abort_json, clean_files, token_required
 
 ENV = os.getenv("FLASK_ENV", "local")
 
 # TODO: Raise error if values not set
 CFG = CONFIG_BY_ENV[os.getenv("FLASK_ENV", "local")]
-CFG.DEBUG = str_to_bool(CFG.DEBUG)
 
 DB_URI = f"{CFG.DB_TYPE}://{CFG.DB_USER}:{CFG.DB_PASSWORD}@{CFG.DB_HOST}:{CFG.DB_PORT}/{CFG.DB_NAME}"
 
@@ -270,7 +269,6 @@ def upload_csv():
     body = request.files["csv"]
     body.save(fpath)
 
-    logger.debug("Normalizing column names...")
     try:
         data = pd.read_csv(fpath)
     except:

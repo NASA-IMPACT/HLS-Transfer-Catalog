@@ -49,7 +49,6 @@ def token_required(func):
                 message="Token is missing!",
             )
         try:
-            logger.info("Validating JWT token")
             data = jwt.decode(token, CFG.JWT_SECRET_KEY, algorithms="HS256")
         except jwt.ExpiredSignatureError:
             abort_json(
@@ -66,10 +65,3 @@ def token_required(func):
         return func(*args, **kwargs)
 
     return decorated
-
-
-def str_to_bool(val: Union[bool, str, int, float]) -> bool:
-    if isinstance(val, (bool, int, float)):
-        return bool(val)
-    val = str(val)
-    return val.strip().lower() in ["true", "1", "t", "y", "yes"]
