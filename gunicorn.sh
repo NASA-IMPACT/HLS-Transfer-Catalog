@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [ "$FLASK_ENV" != null && "$FLASK_ENV" != "local" ];
+if [[ "$FLASK_ENV" != null && "$FLASK_ENV" != "local" ]];
 then
     export SECRETS=$(aws secretsmanager get-secret-value --secret-id $SECRET --region us-east-1 | jq -c '.SecretString | fromjson')
     export DB_HOST=$(echo $SECRETS | jq -r .host)
