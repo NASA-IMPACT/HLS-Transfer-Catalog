@@ -129,6 +129,41 @@ def list_catalogue():
     return jsonify(res)
 
 
+@app.route("/catalogue/count/", methods=["GET"])
+@token_required
+def catalogue_count():
+    """
+    This API is used to get the count of CatalogueItem table based on query fitlers:
+        - transfer_status (reference: `services.db.enums.TransferStatus`)
+        - sealed_state (reference: `services.db.enums.SealedStatus`)
+    """
+    logger.info("/catalogue/count/ - GET called")
+    status = (
+        request.args.get("transfer_status", TransferStatus.NOT_STARTED.value)
+        .strip()
+        .upper()
+    )
+    state = (
+        request.args.get("sealed_state", SealedStatus.PERMANENT_UNSEALED.value)
+        .strip()
+        .upper()
+    )
+    try:
+        res = CatalogueItem.query.filter(
+            and_(
+                CatalogueItem.transfer_status == status,
+                CatalogueItem.sealed_state == state,
+            )
+        ).count()
+    except:
+        abort_json(
+            400,
+            error="FECTHING_FAILED",
+            message="Unable to fetch the catalogue item count.",
+        )
+    return jsonify(dict(count=res))
+
+
 @app.route("/catalogue/", methods=["POST"])
 @token_required
 def create_catalogue():
