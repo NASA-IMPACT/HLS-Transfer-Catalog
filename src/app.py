@@ -96,7 +96,7 @@ def list_catalogue():
         .upper()
     )
     state = (
-        request.args.get("sealed_State", SealedStatus.PERMANENT_UNSEALED.value)
+        request.args.get("sealed_state", SealedStatus.PERMANENT_UNSEALED.value)
         .strip()
         .upper()
     )
@@ -305,7 +305,7 @@ def upload_csv():
         - ContentDate:End
         - Checksum:Algorithm
         - Checksum:Value
-
+        - IsSealed
     TODO:
         - optimize csv loader for a very large CSV
         - optimize csv dump to database
@@ -326,8 +326,7 @@ def upload_csv():
 
     try:
         data.rename(
-            columns=CONSTANTS.CATALOGUE_CSV_COLUMN_MAPPER,
-            inplace=True,
+            columns=CONSTANTS.CATALOGUE_CSV_COLUMN_MAPPER, inplace=True, errors="raise"
         )
     except:
         logger.error("Some columns are missing or improper column name.")
@@ -339,11 +338,13 @@ def upload_csv():
         )
 
     # make sure these columns aren't empty
-    if data[["uuid", "name"]].isna().sum().sum() > 0:
-        logger.error("uuid or name column values are empty!")
+    if data[["uuid", "name", "sealed_state"]].isna().sum().sum() > 0:
+        logger.error("uuid or name or sealed_state column values are empty!")
         clean_files([fpath])
         abort_json(
-            400, error="UPLOAD_FAILED", message="uuid or name column value empty!"
+            400,
+            error="UPLOAD_FAILED",
+            message="uuid or name or sealed_state column value empty!",
         )
 
     # in case content end date is missing, fill it up with start date
