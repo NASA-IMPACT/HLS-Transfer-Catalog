@@ -9,10 +9,11 @@ from dateutil import parser as dt_parser
 from flask import Flask, abort, g, jsonify, request
 from flask_cors import CORS
 from loguru import logger
+from sqlalchemy import and_, asc
 
 import src.constants as CONSTANTS
 from src.config import CONFIG_BY_ENV
-from src.services.db.enums import TransferStatus
+from src.services.db.enums import SealedStatus, TransferStatus
 from src.services.db.models import CatalogueItem, db
 from src.services.db.schema import CatalogueItemSchema
 from src.utils import abort_json, clean_files, token_required
@@ -85,11 +86,17 @@ def list_catalogue():
     """
     This API is used to select the CatalogueItem table based on query fitlers:
         - transfer_status (reference: `services.db.enums.TransferStatus`)
+        - sealed_state (reference: `services.db.enums.SealedStatus`)
         - page (used for pagination)
     """
     logger.info("/catalogue/ - GET called")
     status = (
         request.args.get("transfer_status", TransferStatus.NOT_STARTED.value)
+        .strip()
+        .upper()
+    )
+    state = (
+        request.args.get("sealed_state", SealedStatus.PERMANENT_UNSEALED.value)
         .strip()
         .upper()
     )
@@ -104,16 +111,57 @@ def list_catalogue():
 
     logger.debug(f"page = {page}")
     logger.debug(f"status = {status}")
+    logger.debug(f"state = {state}")
 
-    res = CatalogueItem.query.filter_by(transfer_status=status).paginate(
-        page=page,
-        per_page=CFG.ITEMS_PER_PAGE,
-        error_out=False,
+    res = (
+        CatalogueItem.query.filter(
+            and_(
+                CatalogueItem.transfer_status == status,
+                CatalogueItem.sealed_state == state,
+            )
+        )
+        .order_by(asc(CatalogueItem.unseal_expiry_time))
+        .paginate(page=page, per_page=CFG.ITEMS_PER_PAGE, error_out=False)
     )
     res = CatalogueItemSchema(many=True).dump(res.items)
     logger.debug(f"Total rows selected = {len(res)}")
 
     return jsonify(res)
+
+
+@app.route("/catalogue/count/", methods=["GET"])
+@token_required
+def catalogue_count():
+    """
+    This API is used to get the count of CatalogueItem table based on query fitlers:
+        - transfer_status (reference: `services.db.enums.TransferStatus`)
+        - sealed_state (reference: `services.db.enums.SealedStatus`)
+    """
+    logger.info("/catalogue/count/ - GET called")
+    status = (
+        request.args.get("transfer_status", TransferStatus.NOT_STARTED.value)
+        .strip()
+        .upper()
+    )
+    state = (
+        request.args.get("sealed_state", SealedStatus.PERMANENT_UNSEALED.value)
+        .strip()
+        .upper()
+    )
+    try:
+        res = CatalogueItem.query.filter(
+            and_(
+                CatalogueItem.transfer_status == status,
+                CatalogueItem.sealed_state == state,
+            )
+        ).count()
+    except:
+        abort_json(
+            400,
+            error="FECTHING_FAILED",
+            message="Unable to fetch the catalogue item count.",
+        )
+    return jsonify(dict(count=res))
 
 
 @app.route("/catalogue/", methods=["POST"])
@@ -257,7 +305,7 @@ def upload_csv():
         - ContentDate:End
         - Checksum:Algorithm
         - Checksum:Value
-
+        - IsSealed
     TODO:
         - optimize csv loader for a very large CSV
         - optimize csv dump to database
@@ -278,8 +326,7 @@ def upload_csv():
 
     try:
         data.rename(
-            columns=CONSTANTS.CATALOGUE_CSV_COLUMN_MAPPER,
-            inplace=True,
+            columns=CONSTANTS.CATALOGUE_CSV_COLUMN_MAPPER, inplace=True, errors="raise"
         )
     except:
         logger.error("Some columns are missing or improper column name.")
@@ -291,11 +338,13 @@ def upload_csv():
         )
 
     # make sure these columns aren't empty
-    if data[["uuid", "name"]].isna().sum().sum() > 0:
-        logger.error("uuid or name column values are empty!")
+    if data[["uuid", "name", "sealed_state"]].isna().sum().sum() > 0:
+        logger.error("uuid or name or sealed_state column values are empty!")
         clean_files([fpath])
         abort_json(
-            400, error="UPLOAD_FAILED", message="uuid or name column value empty!"
+            400,
+            error="UPLOAD_FAILED",
+            message="uuid or name or sealed_state column value empty!",
         )
 
     # in case content end date is missing, fill it up with start date
@@ -315,6 +364,7 @@ def upload_csv():
         )
 
     # add transfer columns
+    data["transfer_id"] = ""
     data["transfer_status"] = "NOT_STARTED"
     data["transfer_checksum_value"] = ""
     data["transfer_checksum_verification"] = ""
@@ -322,6 +372,10 @@ def upload_csv():
     data["transfer_completed_on"] = CONSTANTS.DATETIME_OLDEST
     data["transfer_source"] = ""
     data["transfer_destination"] = ""
+
+    data["sealed_state"] = data["sealed_state"].map(
+        CONSTANTS.CATALOGUE_SEALED_STATE_MAPPER
+    )
 
     data["created_on"] = datetime.now()
     data["updated_on"] = datetime.now()

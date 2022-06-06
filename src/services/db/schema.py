@@ -20,6 +20,7 @@ class CatalogueItemSchema(SQLAlchemySchema):
     checksum_algorithm = auto_field()
     checksum_value = auto_field()
 
+    transfer_id = auto_field()
     transfer_status = auto_field()
     transfer_checksum_value = auto_field()
     transfer_checksum_verification = auto_field()
@@ -27,6 +28,10 @@ class CatalogueItemSchema(SQLAlchemySchema):
     transfer_completed_on = fields.fields.String()
     transfer_source = auto_field()
     transfer_destination = auto_field()
+
+    sealed_state = auto_field()
+    unseal_time = fields.fields.String()
+    unseal_expiry_time = fields.fields.String()
 
     created_on = fields.fields.String()
     updated_on = fields.fields.String()
