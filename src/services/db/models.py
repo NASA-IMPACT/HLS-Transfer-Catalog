@@ -32,7 +32,9 @@ class CatalogueItem(db.Model):
     checksum_value = db.Column(db.String)
 
     transfer_id = db.Column(db.String)
-    transfer_status = db.Column(db.String, default=TransferStatus.NOT_STARTED.value)
+    transfer_status = db.Column(
+        db.String, default=TransferStatus.NOT_STARTED.value, index=True
+    )
     transfer_checksum_value = db.Column(db.String, nullable=True)
     transfer_checksum_verification = db.Column(db.String(20), nullable=True)
     transfer_started_on = db.Column(db.DateTime, nullable=True)
@@ -40,9 +42,12 @@ class CatalogueItem(db.Model):
     transfer_source = db.Column(db.String, nullable=True)
     transfer_destination = db.Column(db.String, nullable=True)
 
-    sealed_state = db.Column(db.String)
+    sealed_state = db.Column(db.String, index=True)
     unseal_time = db.Column(db.DateTime, nullable=True)
     unseal_expiry_time = db.Column(db.DateTime, nullable=True)
+
+    source_storage_id = db.Column(db.String, index=True)
+    dest_storage_id = db.Column(db.String, index=True)
 
     created_on = db.Column(db.DateTime, server_default=db.func.now())
     updated_on = db.Column(

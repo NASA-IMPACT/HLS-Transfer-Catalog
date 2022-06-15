@@ -6,6 +6,9 @@ CATALOGUE_POST_MANDATORY_FIELDS = [
     "name",
     "checksum_algorithm",
     "checksum_value",
+    "sealed_state",
+    "source_storage_id",
+    "dest_storage_id",
 ]
 
 CATALOGUE_CSV_COLUMN_MAPPER = {
@@ -18,6 +21,8 @@ CATALOGUE_CSV_COLUMN_MAPPER = {
     "Checksum:Algorithm": "checksum_algorithm",
     "Checksum:Value": "checksum_value",
     "IsSealed": "sealed_state",
+    "SourceStorageId": "source_storage_id",
+    "DestStorageId": "dest_storage_id",
 }
 
 CATALOGUE_SEALED_STATE_MAPPER = {

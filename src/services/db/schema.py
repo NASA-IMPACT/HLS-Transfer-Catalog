@@ -33,5 +33,8 @@ class CatalogueItemSchema(SQLAlchemySchema):
     unseal_time = fields.fields.String()
     unseal_expiry_time = fields.fields.String()
 
+    source_storage_id = fields.fields.String()
+    dest_storage_id = fields.fields.String()
+
     created_on = fields.fields.String()
     updated_on = fields.fields.String()

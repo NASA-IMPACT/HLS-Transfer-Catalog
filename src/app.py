@@ -338,13 +338,19 @@ def upload_csv():
         )
 
     # make sure these columns aren't empty
-    if data[["uuid", "name", "sealed_state"]].isna().sum().sum() > 0:
-        logger.error("uuid or name or sealed_state column values are empty!")
+    if data[CONSTANTS.CATALOGUE_POST_MANDATORY_FIELDS].isna().sum().sum() > 0:
+        logger.error(
+            "Any of the column "
+            + ",".join(CONSTANTS.CATALOGUE_POST_MANDATORY_FIELDS)
+            + " values are empty!"
+        )
         clean_files([fpath])
         abort_json(
             400,
             error="UPLOAD_FAILED",
-            message="uuid or name or sealed_state column value empty!",
+            message="Any of the column "
+            + ",".join(CONSTANTS.CATALOGUE_POST_MANDATORY_FIELDS)
+            + " values are empty!",
         )
 
     # in case content end date is missing, fill it up with start date
