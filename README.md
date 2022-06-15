@@ -51,36 +51,47 @@ Enables anyone to upload csv of specific format to populate the catalogue table 
 
 ```bash
 curl --location --request POST 'http://127.0.0.1:5000/catalogue/bulk/csv/' \
---header 'token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cCI6MTY1MjMzNTgzNn0.UfKN62xWmsXTzwy7tmRbP6I9DbrtXMnidQFFLq6epfs' \
+--header 'token: <token>' \
 --form 'csv=@"/Users/udaykumarbommala/Downloads/test.csv"
 ```
 
 ## 2) /catalogue/ - GET, all items
 
-Enables anyone to fetch catalogue metadata items. We can use 2 query params to filter the result:
+Enables anyone to fetch catalogue metadata items. We can use 3 query params to filter the result:
 - `transfer_status` - NOT_STARTED/COMPLETED/FAILED/IN_PROGRESS
+- `sealed_state` - SEALED/UNSEALED/UNSEALING/PERMANENT_UNSEALED
 - `page` - Used for pagination
 
 
 ```bash
-curl --location --request GET 'http://127.0.0.1:5000/catalogue/?transfer_status=NOT_STARTED' \
---header 'token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cCI6MTY1MjMzNTgzNn0.UfKN62xWmsXTzwy7tmRbP6I9DbrtXMnidQFFLq6epfs'
+curl --location --request GET 'http://127.0.0.1:5000/catalogue/?transfer_status=NOT_STARTED&sealed_state=PERMANENT_UNSEALED&page=1' \
+--header 'token: <token>'
 ```
 
 ## 3)  /catalogue/uuid/ - GET single item
 
 ```bash
 curl --location --request GET 'http://127.0.0.1:5000/catalogue/6a1f5438-50d1-4e02-a11b-52f9018da69f/' \
---header 'token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cCI6MTY1MjMzNTgzNn0.UfKN62xWmsXTzwy7tmRbP6I9DbrtXMnidQFFLq6epfs'
+--header 'token: <token>'
 ```
 
-## 4) /catalogue/ - POST single item
+## 4) /catalogue/count/ - Get the count of catalogue metadata items
+
+Enables anyone to fetch catalogue metadata items count. We can use 2 query params to filter the :
+- `transfer_status` - NOT_STARTED/COMPLETED/FAILED/IN_PROGRESS
+- `sealed_state` - SEALED/UNSEALED/UNSEALING/PERMANENT_UNSEALED
+
+```bash
+curl --location --request GET 'http://127.0.0.1:5000/catalogue/count?transfer_status=NOT_STARTED&sealed_state=PERMANENT_UNSEALED' \
+--header 'token: <token>'
+```
+## 5) /catalogue/ - POST single item
 
 This  is used to create a single catalogue item to the database
 
 ```bash
-curl --location --request POST 'http://127.0.0.1:5000/catalogue/?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cGlyYXRpb24iOiIyMDIyLTA3LTEwIDAxOjQ5OjEwLjQ4MDY0OCIsImFsZ29yaXRobSI6IkhTMjU2In0.T2UNUeZkqtZcV11LgKkGSc92RSN9aqui0cloz_ef7JY' \
---header 'token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cCI6MTY1MjMzNTgzNn0.UfKN62xWmsXTzwy7tmRbP6I9DbrtXMnidQFFLq6epfs' \
+curl --location --request POST 'http://127.0.0.1:5000/catalogue/' \
+--header 'token: <token>' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "uuid": "8e547de43cbf43a3a50dffb81d255bb2",
@@ -93,13 +104,13 @@ curl --location --request POST 'http://127.0.0.1:5000/catalogue/?token=eyJ0eXAiO
 
 > Note: The json data should have `name`, `checksum_value` and `checksum_algorithm` mandatory. If `uuid is provided in the json data, it will be re-used. If not, new uuid will be created.`
 
-## 5) /catalogue/uuid/ - PATCH single item
+## 6) /catalogue/uuid/ - PATCH single item
 
 Used for updating a specific catalogue item referenced by the given uuid.
 
 ```bash
 curl --location --request PATCH 'http://127.0.0.1:5000/catalogue/c266dc7b9fad4d64aaa7d103b6f0af09/' \
---header 'token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cCI6MTY1MjMzNTgzNn0.UfKN62xWmsXTzwy7tmRbP6I9DbrtXMnidQFFLq6epfs' \
+--header 'token: <token>' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "name": "test",
@@ -107,23 +118,23 @@ curl --location --request PATCH 'http://127.0.0.1:5000/catalogue/c266dc7b9fad4d6
 }'
 ```
 
-## 6) /catalogue/uuid/ - DELETE single item
+## 7) /catalogue/uuid/ - DELETE single item
 
 Delets a given catalogue item
 
 ```bash
 curl --location --request DELETE 'http://127.0.0.1:5000/catalogue/8e547de43cbf43a3a50dffb81d255bb2/' \
---header 'token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cCI6MTY1MjMzNTgzNn0.UfKN62xWmsXTzwy7tmRbP6I9DbrtXMnidQFFLq6epfs'
+--header 'token: <token>'
 ```
 
 
-## 7) /catalogue/bulk/ - PATCH multiple items
+## 8) /catalogue/bulk/ - PATCH multiple items
 
 Used for updating multiple items in a single request.
 
 ```bash
 curl --location --request PATCH 'http://127.0.0.1:5000/catalogue/bulk/' \
---header 'token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidWRheSIsInBhc3N3b3JkIjoidWRheSIsImV4cCI6MTY1MjMzNTgzNn0.UfKN62xWmsXTzwy7tmRbP6I9DbrtXMnidQFFLq6epfs' \
+--header 'token: <token>' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "abcdef": {}
@@ -138,7 +149,7 @@ Here the json data posted is of the structure:
 }
 ```
 
-## 8) /auth/login/ - POST Generate JWT Token
+## 9) /auth/login/ - POST Generate JWT Token
 
 Used for generating JWT token based on user credentails
 ```bash
