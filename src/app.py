@@ -340,17 +340,13 @@ def upload_csv():
     # make sure these columns aren't empty
     if data[CONSTANTS.CATALOGUE_POST_MANDATORY_FIELDS].isna().sum().sum() > 0:
         logger.error(
-            "Any of the column "
-            + ",".join(CONSTANTS.CATALOGUE_POST_MANDATORY_FIELDS)
-            + " values are empty!"
+            CONSTANTS.ERROR_MSG_ANY_OF_THE_CATALOGUE_POST_MANDATORY_FIELDS_EMPTY
         )
         clean_files([fpath])
         abort_json(
             400,
             error="UPLOAD_FAILED",
-            message="Any of the column "
-            + ",".join(CONSTANTS.CATALOGUE_POST_MANDATORY_FIELDS)
-            + " values are empty!",
+            message=CONSTANTS.ERROR_MSG_ANY_OF_THE_CATALOGUE_POST_MANDATORY_FIELDS_EMPTY,
         )
 
     # in case content end date is missing, fill it up with start date
