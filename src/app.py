@@ -24,6 +24,11 @@ ENV = os.getenv("FLASK_ENV", "local")
 CFG = CONFIG_BY_ENV[os.getenv("FLASK_ENV", "local")]
 
 DB_URI = f"{CFG.DB_TYPE}://{CFG.DB_USER}:{CFG.DB_PASSWORD}@{CFG.DB_HOST}:{CFG.DB_PORT}/{CFG.DB_NAME}"
+ERROR_MSG_ANY_OF_THE_CATALOGUE_POST_MANDATORY_FIELDS_EMPTY = (
+    "Any of the column "
+    + ",".join(CONSTANTS.CATALOGUE_POST_MANDATORY_FIELDS)
+    + "values are empty!"
+)
 
 logger.info("Starting the server...")
 app = Flask(__name__)

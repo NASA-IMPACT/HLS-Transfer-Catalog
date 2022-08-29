@@ -35,9 +35,3 @@ CATALOGUE_SEALED_STATE_MAPPER = {
 }
 
 DATETIME_OLDEST = datetime.datetime(year=1970, month=1, day=1)
-
-ERROR_MSG_ANY_OF_THE_CATALOGUE_POST_MANDATORY_FIELDS_EMPTY = (
-    "Any of the column "
-    + ",".join(CATALOGUE_POST_MANDATORY_FIELDS)
-    + "values are empty!"
-)
