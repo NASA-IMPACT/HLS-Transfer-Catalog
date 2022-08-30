@@ -25,6 +25,12 @@ CFG = CONFIG_BY_ENV[os.getenv("FLASK_ENV", "local")]
 
 DB_URI = f"{CFG.DB_TYPE}://{CFG.DB_USER}:{CFG.DB_PASSWORD}@{CFG.DB_HOST}:{CFG.DB_PORT}/{CFG.DB_NAME}"
 
+ERROR_MSG_ANY_OF_THE_CATALOGUE_POST_MANDATORY_FIELDS_EMPTY = (
+    "Any of the column "
+    + ",".join(CONSTANTS.CATALOGUE_POST_MANDATORY_FIELDS)
+    + "values are empty!"
+)
+
 logger.info("Starting the server...")
 app = Flask(__name__)
 app.config["FLASK_ENV"] = ENV
@@ -338,13 +344,13 @@ def upload_csv():
         )
 
     # make sure these columns aren't empty
-    if data[["uuid", "name", "sealed_state"]].isna().sum().sum() > 0:
-        logger.error("uuid or name or sealed_state column values are empty!")
+    if data[CONSTANTS.CATALOGUE_POST_MANDATORY_FIELDS].isna().sum().sum() > 0:
+        logger.error(ERROR_MSG_ANY_OF_THE_CATALOGUE_POST_MANDATORY_FIELDS_EMPTY)
         clean_files([fpath])
         abort_json(
             400,
             error="UPLOAD_FAILED",
-            message="uuid or name or sealed_state column value empty!",
+            message=ERROR_MSG_ANY_OF_THE_CATALOGUE_POST_MANDATORY_FIELDS_EMPTY,
         )
 
     # in case content end date is missing, fill it up with start date
