@@ -24,6 +24,7 @@ ENV = os.getenv("FLASK_ENV", "local")
 CFG = CONFIG_BY_ENV[os.getenv("FLASK_ENV", "local")]
 
 DB_URI = f"{CFG.DB_TYPE}://{CFG.DB_USER}:{CFG.DB_PASSWORD}@{CFG.DB_HOST}:{CFG.DB_PORT}/{CFG.DB_NAME}"
+
 ERROR_MSG_ANY_OF_THE_CATALOGUE_POST_MANDATORY_FIELDS_EMPTY = (
     "Any of the column "
     + ",".join(CONSTANTS.CATALOGUE_POST_MANDATORY_FIELDS)
@@ -344,14 +345,12 @@ def upload_csv():
 
     # make sure these columns aren't empty
     if data[CONSTANTS.CATALOGUE_POST_MANDATORY_FIELDS].isna().sum().sum() > 0:
-        logger.error(
-            CONSTANTS.ERROR_MSG_ANY_OF_THE_CATALOGUE_POST_MANDATORY_FIELDS_EMPTY
-        )
+        logger.error(ERROR_MSG_ANY_OF_THE_CATALOGUE_POST_MANDATORY_FIELDS_EMPTY)
         clean_files([fpath])
         abort_json(
             400,
             error="UPLOAD_FAILED",
-            message=CONSTANTS.ERROR_MSG_ANY_OF_THE_CATALOGUE_POST_MANDATORY_FIELDS_EMPTY,
+            message=ERROR_MSG_ANY_OF_THE_CATALOGUE_POST_MANDATORY_FIELDS_EMPTY,
         )
 
     # in case content end date is missing, fill it up with start date
