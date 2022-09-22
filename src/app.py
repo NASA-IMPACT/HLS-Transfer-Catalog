@@ -73,7 +73,7 @@ def login():
 
 
 @app.route("/catalogue/<uuid>/", methods=["GET"])
-//@token_required
+#@token_required
 def get_catalogue(uuid: str):
     """
     GET single item from the database
@@ -87,7 +87,7 @@ def get_catalogue(uuid: str):
 
 
 @app.route("/catalogue/", methods=["GET"])
-//@token_required
+#@token_required
 def list_catalogue():
     """
     This API is used to select the CatalogueItem table based on query fitlers:
@@ -136,7 +136,7 @@ def list_catalogue():
 
 
 @app.route("/catalogue/count/", methods=["GET"])
-//@token_required
+#@token_required
 def catalogue_count():
     """
     This API is used to get the count of CatalogueItem table based on query fitlers:
@@ -171,7 +171,7 @@ def catalogue_count():
 
 
 @app.route("/catalogue/", methods=["POST"])
-//@token_required
+#@token_required
 def create_catalogue():
     """
     Create single catalog item record and return the created record.
@@ -214,7 +214,7 @@ def create_catalogue():
 
 
 @app.route("/catalogue/<uuid>/", methods=["PATCH"])
-//@token_required
+#@token_required
 def patch_catalogue(uuid: str):
     """
     Upsert a single catalogue item.
@@ -243,7 +243,7 @@ def patch_catalogue(uuid: str):
 
 
 @app.route("/catalogue/<uuid>/", methods=["DELETE"])
-//@token_required
+#@token_required
 def delete_catalogue(uuid: str):
     item = CatalogueItem.query.filter_by(uuid=uuid).first()
     if not item:
@@ -257,7 +257,7 @@ def delete_catalogue(uuid: str):
 
 
 @app.route("/catalogue/bulk/", methods=["PATCH"])
-//@token_required
+#@token_required
 def bulk_update_catalogue():
     """
     This API is used to bulk UPSERT the CatalogueItem values
@@ -297,7 +297,7 @@ def bulk_update_catalogue():
 
 
 @app.route("/catalogue/bulk/csv/", methods=["POST"])
-//@token_required
+#@token_required
 def upload_csv():
     """
     Endpoint to upload CSV and update catalogeitem table
