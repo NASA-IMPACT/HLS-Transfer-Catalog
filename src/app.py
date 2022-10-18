@@ -255,6 +255,18 @@ def delete_catalogue(uuid: str):
     db.session.commit()
     return jsonify(res)
 
+@app.route("/catalogue/", methods=["DELETE"])
+def delete_all_catalogue():
+    db.session.query(CatalogueItem).delete()
+    db.session.commit()
+    return (
+        jsonify(
+            {
+                "message": "All the records got successufully deleted"
+            }
+        ),
+        200,
+    )
 
 @app.route("/catalogue/bulk/", methods=["PATCH"])
 #@token_required
