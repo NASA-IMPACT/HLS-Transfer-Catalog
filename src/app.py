@@ -333,13 +333,14 @@ def upload_csv():
     """
     logger.info("/catalogue/upload/ POST called")
     file = request.files["file"]
-    if file.filename.rsplit('.', 1)[1].lower() not in ALLOWED_EXTENSIONS:
+    fextension = file.filename.rsplit('.', 1)[1].lower()
+    if fextension not in ALLOWED_EXTENSIONS:
         abort_json(400, error="INVALID_FILE_EXTENSION")
     fname = uuid.uuid4().hex
     fpath = ""
     if file.filename == '':
         abort_json(400, error="INVALID_FILE")
-    if file.filename.rsplit('.', 1)[1] == 'csv':
+    if fextension == 'csv':
         fpath = os.path.join("tmp", f"{fname}.csv")
     else:
         fpath = os.path.join("tmp", f"{fname}.zip")
