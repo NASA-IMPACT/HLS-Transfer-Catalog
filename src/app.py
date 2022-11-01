@@ -31,6 +31,8 @@ ERROR_MSG_ANY_OF_THE_CATALOGUE_POST_MANDATORY_FIELDS_EMPTY = (
     + "values are empty!"
 )
 
+ALLOWED_EXTENSIONS = CFG.ALLOWED_EXTENSIONS
+
 logger.info("Starting the server...")
 app = Flask(__name__)
 app.config["FLASK_ENV"] = ENV
@@ -312,9 +314,9 @@ def bulk_update_catalogue():
 #@token_required
 def upload_csv():
     """
-    Endpoint to upload CSV and update catalogeitem table
+    Endpoint to upload CSV/ZIP and update catalogeitem table
 
-    This only accepts a csv file with following columns (strictly):
+    This only accepts a csv/zip file with following columns (strictly):
         - Id (unique identifier to the file)
         - Name
         - ContentLength
@@ -330,10 +332,18 @@ def upload_csv():
         - async upload
     """
     logger.info("/catalogue/upload/ POST called")
+    file = request.files["file"]
+    if file.filename.rsplit('.', 1)[1].lower() not in ALLOWED_EXTENSIONS:
+        abort_json(400, error="INVALID_FILE_EXTENSION")
     fname = uuid.uuid4().hex
-    fpath = os.path.join("tmp", f"{fname}.csv")
-    body = request.files["csv"]
-    body.save(fpath)
+    fpath = ""
+    if file.filename == '':
+        abort_json(400, error="INVALID_FILE")
+    if file.filename.rsplit('.', 1)[1] == 'csv':
+        fpath = os.path.join("tmp", f"{fname}.csv")
+    else:
+        fpath = os.path.join("tmp", f"{fname}.zip")
+    file.save(fpath)
 
     try:
         data = pd.read_csv(fpath)
