@@ -12,7 +12,7 @@ class BaseConfig:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
     JWT_TOKEN_EXPIRATION_SECONDS = int(os.getenv("JWT_TOKEN_EXPIRATION_SECONDS", 300))
     DEBUG = os.getenv("FLASK_DEBUG", False)
-
+    ALLOWED_EXTENSIONS = os.getenv("ALLOWED_EXTENSIONS", "{'csv', 'zip'}")
 
 class LocalConfig(BaseConfig):
     DEBUG = os.getenv("FLASK_DEBUG", True)
