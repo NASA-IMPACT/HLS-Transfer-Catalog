@@ -47,12 +47,12 @@ Currently, we provide full CRUD REST api for the catalog tables.
 
 ## 1) /catalogue/bulk/csv - POST, Upload CSV
 
-Enables anyone to upload csv of specific format to populate the catalogue table in bulk.
+Enables anyone to upload csv/zip of specific format to populate the catalogue table in bulk.
 
 ```bash
 curl --location --request POST 'http://127.0.0.1:5000/catalogue/bulk/csv/' \
 --header 'token: <token>' \
---form 'csv=@"/Users/udaykumarbommala/Downloads/test.csv"
+--form 'file=@"/Users/udaykumarbommala/Downloads/test.csv"
 ```
 
 ## 2) /catalogue/ - GET, all items
