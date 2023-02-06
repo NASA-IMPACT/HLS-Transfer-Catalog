@@ -3,7 +3,8 @@ import datetime
 from src.services.db.enums import SealedStatus
 
 CATALOGUE_POST_MANDATORY_FIELDS = [
-    "name",
+    "source_path",
+    "destination_path",
     "checksum_algorithm",
     "checksum_value",
     "sealed_state",
@@ -13,7 +14,8 @@ CATALOGUE_POST_MANDATORY_FIELDS = [
 
 CATALOGUE_CSV_COLUMN_MAPPER = {
     "Id": "uuid",
-    "Name": "name",
+    "SourcePath": "source_path",
+    "DestinationPath": "destination_path",
     "ContentLength": "content_length",
     "IngestionDate": "ingestion_date",
     "ContentDate:Start": "content_date_start",

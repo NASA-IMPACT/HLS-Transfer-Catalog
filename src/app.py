@@ -98,12 +98,12 @@ def list_catalogue():
         - page (used for pagination)
     """
     logger.info("/catalogue/ - GET called")
-    status = (
+    transfer_status = (
         request.args.get("transfer_status", TransferStatus.NOT_STARTED.value)
         .strip()
         .upper()
     )
-    state = (
+    sealed_status = (
         request.args.get("sealed_state", SealedStatus.PERMANENT_UNSEALED.value)
         .strip()
         .upper()
@@ -117,15 +117,18 @@ def list_catalogue():
             logger.warning("Defaulting page to 1")
         page = 1
 
+    logger.debug(f"raw transfer_status = {request.args.get('transfer_status')}")
+    logger.debug(f"raw sealed_state = {request.args.get('sealed_state')}")
+
     logger.debug(f"page = {page}")
-    logger.debug(f"status = {status}")
-    logger.debug(f"state = {state}")
+    logger.debug(f"status = {transfer_status}")
+    logger.debug(f"state = {sealed_status}")
 
     res = (
         CatalogueItem.query.filter(
             and_(
-                CatalogueItem.transfer_status == status,
-                CatalogueItem.sealed_state == state,
+                CatalogueItem.transfer_status == transfer_status,
+                CatalogueItem.sealed_state == sealed_status,
             )
         )
         .order_by(asc(CatalogueItem.unseal_expiry_time))
@@ -307,7 +310,7 @@ def bulk_update_catalogue():
     failed = list(set(data.keys()) - set(success))
     logger.debug(f"success: {len(success)} | failed: {len(failed)}")
 
-    return jsonify(dict(failed=failed, succes=success))
+    return jsonify(dict(failed=failed, success=success))
 
 
 @app.route("/catalogue/bulk/csv/", methods=["POST"])

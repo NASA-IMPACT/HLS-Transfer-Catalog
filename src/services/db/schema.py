@@ -13,7 +13,8 @@ class CatalogueItemSchema(SQLAlchemySchema):
         load_instance = True
 
     uuid = auto_field()
-    name = auto_field()
+    source_path = fields.fields.String()
+    destination_path = fields.fields.String()
     ingestion_date = fields.fields.String()
     content_date_start = fields.fields.String()
     content_date_end = fields.fields.String()
