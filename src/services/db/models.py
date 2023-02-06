@@ -23,7 +23,8 @@ class CatalogueItem(db.Model):
 
     __tablename__ = f"{TABLE_PREFIX}catalogue_item"
     uuid = db.Column(db.String, primary_key=True)
-    name = db.Column(db.String)
+    source_path = db.Column(db.String)
+    destination_path = db.Column(db.String)
     content_length = db.Column(db.BIGINT)
     ingestion_date = db.Column(db.DateTime)
     content_date_start = db.Column(db.DateTime)
