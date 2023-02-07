@@ -456,133 +456,34 @@ def upload_csv():
         200,
     )
 
+@app.route("/catalogue/archive/records", methods=["POST"])
+def archive_catalogue_records():
+    container_name = (
+        request.args.get("container_name")
+        .strip()
+        .upper()
+    )
+    if container_name is None:
+       return abort_json(400, error="REQUEST_FAILED", message="Please enter container name!")
 
-@app.route("/catalogue/bulk/archive/csv/", methods=["POST"])
-#@token_required
-def upload_archive_csv():
-    """
-    Endpoint to upload CSV/ZIP and update catalogeitem table
-
-    This only accepts a csv/zip file with following columns (strictly):
-        - Id (unique identifier to the file)
-        - Name
-        - ContentLength
-        - IngestionDate
-        - ContentDate:Start
-        - ContentDate:End
-        - Checksum:Algorithm
-        - Checksum:Value
-        - IsSealed
-    TODO:
-        - optimize csv loader for a very large CSV
-        - optimize csv dump to database
-        - async upload
-    """
-    logger.info("/catalogue/bulk/archive/csv/ POST called")
-    file = request.files["file"]
-    fextension = file.filename.rsplit('.', 1)[1].lower()
-    if fextension not in ALLOWED_EXTENSIONS:
-        abort_json(400, error="INVALID_FILE_EXTENSION")
-    fname = uuid.uuid4().hex
-    fpath = ""
-    if file.filename == '':
-        abort_json(400, error="INVALID_FILE")
-    if fextension == 'csv':
-        fpath = os.path.join("tmp", f"{fname}.csv")
-    else:
-        fpath = os.path.join("tmp", f"{fname}.zip")
-    file.save(fpath)
-
-    try:
-        data = pd.read_csv(fpath)
-    except:
-        logger.error("Failed to load csv")
-        clean_files([fpath])
-        abort_json(400, error="INVALID_FILE")
-
-    try:
-        data.rename(
-            columns=CONSTANTS.CATALOGUE_CSV_COLUMN_MAPPER, inplace=True, errors="raise"
+    records = CatalogueItem.query.filter(
+        CatalogueItem.source_storage_id == container_name
         )
-    except:
-        logger.error("Some columns are missing or improper column name.")
-        clean_files([fpath])
-        abort_json(
-            400,
-            error="UPLOAD_FAILED",
-            message="Invalid columns or some columns are missing!",
-        )
+    for record in records:
+        record = CatalogueArchiveItem(uuid = record.uuid, source_path = record.source_path, destination_path = record.destination_path, content_length = record.content_length,
+                                      ingestion_date = record.ingestion_date, content_date_start= record.content_date_start, content_date_end= record.content_date_end,
+                                      checksum_algorithm = record.checksum_algorithm, checksum_value = record.checksum_value, transfer_id = record.transfer_id, transfer_status = record.transfer_status,
+                                      transfer_checksum_value = record.transfer_checksum_value, transfer_checksum_verification = record.transfer_checksum_verification,
+                                      transfer_started_on = record.transfer_started_on, transfer_completed_on = record.transfer_completed_on, transfer_source=record.transfer_source,
+                                      transfer_destination = record.transfer_destination, sealed_state= record.sealed_state, unseal_time= record.unseal_time, unseal_expiry_time = record.unseal_expiry_time,
+                                      source_storage_id = record.source_storage_id, dest_storage_id = record.dest_storage_id, created_on = record.created_on, updated_on=record.updated_on)
+        db.session.add(record)
+    db.session.commit()
 
-    # make sure these columns aren't empty
-    if data[CONSTANTS.CATALOGUE_POST_MANDATORY_FIELDS].isna().sum().sum() > 0:
-        logger.error(ERROR_MSG_ANY_OF_THE_CATALOGUE_POST_MANDATORY_FIELDS_EMPTY)
-        clean_files([fpath])
-        abort_json(
-            400,
-            error="UPLOAD_FAILED",
-            message=ERROR_MSG_ANY_OF_THE_CATALOGUE_POST_MANDATORY_FIELDS_EMPTY,
-        )
-
-    # in case content end date is missing, fill it up with start date
-    data["content_date_end"].fillna(data["content_date_start"], inplace=True)
-    try:
-        data["content_date_start"] = pd.to_datetime(data["content_date_start"])
-        data["content_date_end"] = pd.to_datetime(data["content_date_end"])
-        data["ingestion_date"] = pd.to_datetime(data["ingestion_date"])
-        # data["ingestion_date"] = data["ingestion_date"].apply(dt_parser.parse)
-    except:
-        logger.error(
-            "Date time conversion failed for content_date_start and content_date_end columns! Aborting..."
-        )
-        clean_files([fpath])
-        abort_json(
-            400, error="UPLOAD_FAILED", message="Invalid ingestion/content-start date!"
-        )
-
-    # add transfer columns
-    data["transfer_id"] = ""
-    data["transfer_status"] = "COMPLETED"
-    data["transfer_checksum_value"] = ""
-    data["transfer_checksum_verification"] = ""
-    data["transfer_started_on"] = CONSTANTS.DATETIME_OLDEST
-    data["transfer_completed_on"] = CONSTANTS.DATETIME_OLDEST
-    data["transfer_source"] = ""
-    data["transfer_destination"] = ""
-
-    data["sealed_state"] = "UNSEALED"
-
-    data["created_on"] = datetime.now()
-    data["updated_on"] = datetime.now()
-
-    uuids = list(data["uuid"])
-    items = list(map(lambda d: CatalogueArchiveItem(**d), data.to_dict("records")))
-
-    logger.debug(f"Dumping to table={CatalogueArchiveItem.__tablename__}")
-
-    failed = []
-    try:
-
-        existing_data = CatalogueArchiveItem.query.filter(CatalogueArchiveItem.uuid.in_(uuids))
-        existing_uuids = set(map(lambda d: d.uuid, existing_data))
-
-        to_add_uuids = set(uuids) - existing_uuids
-        to_add_data = list(filter(lambda item: item.uuid in to_add_uuids, items))
-        db.session.add_all(to_add_data)
-        db.session.commit()
-
-        failed = list(existing_uuids)
-        logger.debug(f"{len(to_add_data)}/{len(uuids)} data added.")
-    except:
-        logger.error("CatalogueArchiveItem table upload failed")
-        abort_json(400, error="UPLOAD_FAILED", message="Dumping to sql table failed!")
-    finally:
-        clean_files([fpath])
-    logger.info("CatalogueArchiveItem table updated Successfully!")
     return (
         jsonify(
             {
-                "message": "success",
-                "failed": {"count": len(failed), "uuids": failed},
+                "message": "All the records got successufully got inserted"
             }
         ),
         200,
