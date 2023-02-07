@@ -456,34 +456,33 @@ def upload_csv():
         200,
     )
 
-@app.route("/catalogue/archive/records", methods=["POST"])
+@app.route("/catalogue/archive/records/", methods=["POST"])
 def archive_catalogue_records():
+    logger.info("/catalogue/archive/records/ POST called")
     container_name = (
         request.args.get("container_name")
-        .strip()
-        .upper()
     )
-    if container_name is None:
+    if not container_name.strip():
        return abort_json(400, error="REQUEST_FAILED", message="Please enter container name!")
-
-    records = CatalogueItem.query.filter(
-        CatalogueItem.source_storage_id == container_name
-        )
-    for record in records:
-        record = CatalogueArchiveItem(uuid=record.uuid, source_path=record.source_path, destination_path=record.destination_path, content_length=record.content_length,
-                                      ingestion_date=record.ingestion_date, content_date_start=record.content_date_start, content_date_end=record.content_date_end,
-                                      checksum_algorithm=record.checksum_algorithm, checksum_value=record.checksum_value, transfer_id=record.transfer_id, 
-                                      transfer_status=record.transfer_status, transfer_checksum_value=record.transfer_checksum_value, transfer_checksum_verification=record.transfer_checksum_verification,
-                                      transfer_started_on=record.transfer_started_on, transfer_completed_on=record.transfer_completed_on, transfer_source=record.transfer_source,
-                                      transfer_destination=record.transfer_destination, sealed_state=record.sealed_state, unseal_time=record.unseal_time, unseal_expiry_time=record.unseal_expiry_time,
-                                      source_storage_id=record.source_storage_id, dest_storage_id=record.dest_storage_id, created_on=record.created_on, updated_on=record.updated_on)
-        db.session.add(record)
-    db.session.commit()
-
+    try:
+        records = CatalogueItem.query.filter(
+            CatalogueItem.source_storage_id == container_name
+            )
+        archive_records = []
+        for record in records:
+            record = CatalogueArchiveItem(**{k: v for k, v in record.__dict__.items() if k != "_sa_instance_state"})
+            archive_records.append(record)
+        db.session.add_all(archive_records)
+        logger.debug(f"{len(archive_records)} data added.")
+        db.session.commit()
+    except:
+        logger.error("Archiving the records to archive table got failed")
+        abort_json(400, error="ARCHIVE_FAILED", message="Archiving records to archive table failed!")
+    logger.info("CatalogueArchiveItem table updated Successfully!")
     return (
         jsonify(
             {
-                "message": "All the records got successufully got inserted"
+                "message": "All the records got successufully archived into archive table"
             }
         ),
         200,
