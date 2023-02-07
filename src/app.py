@@ -470,13 +470,13 @@ def archive_catalogue_records():
         CatalogueItem.source_storage_id == container_name
         )
     for record in records:
-        record = CatalogueArchiveItem(uuid = record.uuid, source_path = record.source_path, destination_path = record.destination_path, content_length = record.content_length,
-                                      ingestion_date = record.ingestion_date, content_date_start= record.content_date_start, content_date_end= record.content_date_end,
-                                      checksum_algorithm = record.checksum_algorithm, checksum_value = record.checksum_value, transfer_id = record.transfer_id, transfer_status = record.transfer_status,
-                                      transfer_checksum_value = record.transfer_checksum_value, transfer_checksum_verification = record.transfer_checksum_verification,
-                                      transfer_started_on = record.transfer_started_on, transfer_completed_on = record.transfer_completed_on, transfer_source=record.transfer_source,
-                                      transfer_destination = record.transfer_destination, sealed_state= record.sealed_state, unseal_time= record.unseal_time, unseal_expiry_time = record.unseal_expiry_time,
-                                      source_storage_id = record.source_storage_id, dest_storage_id = record.dest_storage_id, created_on = record.created_on, updated_on=record.updated_on)
+        record = CatalogueArchiveItem(uuid=record.uuid, source_path=record.source_path, destination_path=record.destination_path, content_length=record.content_length,
+                                      ingestion_date=record.ingestion_date, content_date_start=record.content_date_start, content_date_end=record.content_date_end,
+                                      checksum_algorithm=record.checksum_algorithm, checksum_value=record.checksum_value, transfer_id=record.transfer_id, 
+                                      transfer_status=record.transfer_status, transfer_checksum_value=record.transfer_checksum_value, transfer_checksum_verification=record.transfer_checksum_verification,
+                                      transfer_started_on=record.transfer_started_on, transfer_completed_on=record.transfer_completed_on, transfer_source=record.transfer_source,
+                                      transfer_destination=record.transfer_destination, sealed_state=record.sealed_state, unseal_time=record.unseal_time, unseal_expiry_time=record.unseal_expiry_time,
+                                      source_storage_id=record.source_storage_id, dest_storage_id=record.dest_storage_id, created_on=record.created_on, updated_on=record.updated_on)
         db.session.add(record)
     db.session.commit()
 
