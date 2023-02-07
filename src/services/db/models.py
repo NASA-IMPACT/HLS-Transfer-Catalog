@@ -73,9 +73,11 @@ class CatalogueItem(db.Model):
 
 
 class CatalogueArchiveItem(db.Model):
+
     """
-    This is the metadata information for each archive file
+    This is the metadata information for each archived file
     that is transferred.
+
     """
 
     __tablename__ = f"{TABLE_PREFIX}catalogue_archive_item"
