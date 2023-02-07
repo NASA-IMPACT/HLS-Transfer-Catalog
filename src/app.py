@@ -15,7 +15,7 @@ import src.constants as CONSTANTS
 from src.config import CONFIG_BY_ENV
 from src.services.db.enums import SealedStatus, TransferStatus
 from src.services.db.models import CatalogueItem, CatalogueArchiveItem, db
-from src.services.db.schema import CatalogueItemSchema, CatalogueArchiveItemSchema
+from src.services.db.schema import CatalogueItemSchema
 from src.utils import abort_json, clean_files, token_required
 
 ENV = os.getenv("FLASK_ENV", "local")
