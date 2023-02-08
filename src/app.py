@@ -95,7 +95,7 @@ def list_catalogue():
     This API is used to select the CatalogueItem table based on query fitlers:
         - transfer_status (reference: `services.db.enums.TransferStatus`)
         - sealed_state (reference: `services.db.enums.SealedStatus`)
-        - page (used for pagination)
+        - limit (to limit the number of records)
     """
     logger.info("/catalogue/ - GET called")
     transfer_status = (
@@ -108,33 +108,43 @@ def list_catalogue():
         .strip()
         .upper()
     )
+    
+    limit = request.args.get('limit')
+    if limit:
+        limit = int(limit)
+    else:
+        limit = int(CFG.LIMIT)
 
-    page = 1
-    try:
-        page = int(request.args.get("page", 1))
-    except:
-        if app.config.get("DEBUG", False):
-            logger.warning("Defaulting page to 1")
-        page = 1
+    # page = 1
+    # try:
+    #     page = int(request.args.get("page", 1))
+    # except:
+    #     if app.config.get("DEBUG", False):
+    #         logger.warning("Defaulting page to 1")
+    #     page = 1
 
     logger.debug(f"raw transfer_status = {request.args.get('transfer_status')}")
     logger.debug(f"raw sealed_state = {request.args.get('sealed_state')}")
 
-    logger.debug(f"page = {page}")
+    logger.debug(f"limit = {limit}")
     logger.debug(f"status = {transfer_status}")
     logger.debug(f"state = {sealed_status}")
 
-    res = (
-        CatalogueItem.query.filter(
-            and_(
-                CatalogueItem.transfer_status == transfer_status,
-                CatalogueItem.sealed_state == sealed_status,
-            )
-        )
-        .order_by(asc(CatalogueItem.unseal_expiry_time))
-        .paginate(page=page, per_page=CFG.ITEMS_PER_PAGE, error_out=False)
-    )
-    res = CatalogueItemSchema(many=True).dump(res.items)
+    res = CatalogueItem.query.filter(CatalogueItem.transfer_status == transfer_status and CatalogueItem.sealed_state == sealed_status).order_by(CatalogueItem.unseal_expiry_time.desc()).limit(limit).all()
+
+    # res = (
+    #     CatalogueItem.query.filter(
+    #         and_(
+    #             CatalogueItem.transfer_status == transfer_status,
+    #             CatalogueItem.sealed_state == sealed_status,
+    #         )
+    #     )
+    #     .order_by(asc(CatalogueItem.unseal_expiry_time))
+    #     .paginate(page=page, per_page=CFG.ITEMS_PER_PAGE, error_out=False)
+    # )
+    #res = CatalogueItemSchema(many=True).dump(res.items)
+    
+    res = CatalogueItemSchema(many=True).dump(res)
     logger.debug(f"Total rows selected = {len(res)}")
 
     return jsonify(res)
