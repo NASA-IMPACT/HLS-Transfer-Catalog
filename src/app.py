@@ -465,15 +465,9 @@ def archive_catalogue_records():
     if not container_name.strip():
        return abort_json(400, error="REQUEST_FAILED", message="Please enter container name!")
     try:
-        records = CatalogueItem.query.filter(
-            CatalogueItem.source_storage_id == container_name
-            )
-        archive_records = []
-        for record in records:
-            record = CatalogueArchiveItem(**{k: v for k, v in record.__dict__.items() if k != "_sa_instance_state"})
-            archive_records.append(record)
-        db.session.add_all(archive_records)
-        logger.debug(f"{len(archive_records)} data added.")
+        query = "INSERT INTO {} SELECT * FROM {} WHERE source_storage_id='{}';".format(CatalogueArchiveItem.__tablename__, CatalogueItem.__tablename__, container_name)
+        logger.info(f"query: {query}")
+        db.session.execute(query)
         db.session.commit()
     except:
         logger.error("Archiving the records to archive table got failed")
