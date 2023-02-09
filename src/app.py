@@ -459,10 +459,8 @@ def upload_csv():
 @app.route("/catalogue/archive/records/", methods=["POST"])
 def archive_catalogue_records():
     logger.info("/catalogue/archive/records/ POST called")
-    container_name = (
-        request.args.get("container_name")
-    )
-    if not container_name.strip():
+    container_name = (request.args.get("container_name"))
+    if not container_name or not container_name.strip():
        return abort_json(400, error="REQUEST_FAILED", message="Please enter container name!")
     try:
         query = "INSERT INTO {} SELECT * FROM {} WHERE source_storage_id='{}';".format(CatalogueArchiveItem.__tablename__, CatalogueItem.__tablename__, container_name)
