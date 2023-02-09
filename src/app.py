@@ -466,7 +466,10 @@ def archive_catalogue_records():
        return abort_json(400, error="REQUEST_FAILED", message="Please enter container name!")
     try:
         query = "INSERT INTO {} SELECT * FROM {} WHERE source_storage_id='{}';".format(CatalogueArchiveItem.__tablename__, CatalogueItem.__tablename__, container_name)
-        logger.info(f"query: {query}")
+        logger.info(f"archiving query: {query}")
+        db.session.execute(query)
+        query = "DELETE FROM {} WHERE source_storage_id='{}';".format(CatalogueItem.__tablename__, container_name)
+        logger.info(f"delete query: {query}")
         db.session.execute(query)
         db.session.commit()
     except:
