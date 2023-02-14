@@ -60,3 +60,4 @@ class CatalogueTransferTrackerSchema(SQLAlchemySchema):
     total_capacity = fields.fields.Integer()
     created_on = fields.fields.String()
     updated_on = fields.fields.String()
+    
