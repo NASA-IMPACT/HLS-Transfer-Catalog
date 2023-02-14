@@ -129,3 +129,40 @@ class CatalogueArchiveItem(db.Model):
             if hasattr(self, k):
                 setattr(self, k, v)
                 self.updated_on = datetime.now()
+
+class CatalogueTransferTracker(db.Model):
+
+    """
+    This table contains information about the tracking of each transfer
+
+    """
+
+    __tablename__ = f"{TABLE_PREFIX}catalogue_transfer_tracker"
+    uuid = db.Column(db.String, primary_key=True)
+    flow_name = db.Column(db.String)
+    source_storage_id = db.Column(db.String)
+    destination_storage_id = db.Column(db.String)
+    progress_percentage = db.Column(db.Integer)
+    transfer_status = db.Column(db.String)
+    total_capacity = db.Column(db.BIGINT)
+
+    created_on = db.Column(db.DateTime, server_default=db.func.now())
+    updated_on = db.Column(
+        db.DateTime, server_default=db.func.now(), server_onupdate=db.func.now()
+    )
+
+    def update(self, data: dict) -> None:
+        """
+        Update through external dict.
+        """
+        if not data:
+            return
+        data = data.copy()
+        data.pop("uuid", None)
+        data.pop("created_on", None)
+        data.pop("updated_on", None)
+
+        for k, v in data.items():
+            if hasattr(self, k):
+                setattr(self, k, v)
+                self.updated_on = datetime.now()
