@@ -1,6 +1,6 @@
 from marshmallow_sqlalchemy import SQLAlchemySchema, auto_field, fields
 
-from .models import CatalogueItem
+from .models import CatalogueItem, CatalogueTransferTracker
 
 
 class CatalogueItemSchema(SQLAlchemySchema):
@@ -37,5 +37,26 @@ class CatalogueItemSchema(SQLAlchemySchema):
     source_storage_id = fields.fields.String()
     dest_storage_id = fields.fields.String()
 
+    created_on = fields.fields.String()
+    updated_on = fields.fields.String()
+
+
+class CatalogueTransferTrackerSchema(SQLAlchemySchema):
+
+    """
+    This is used for serialization
+    """
+
+    class Meta:
+        model = CatalogueTransferTracker
+        load_instance = True
+
+    uuid = auto_field()
+    flow_name = fields.fields.String()
+    source_storage_id = fields.fields.String()
+    destination_storage_id = fields.fields.String()
+    progress_percentage = fields.fields.Integer()
+    transfer_status = fields.fields.String()
+    total_capacity = fields.fields.Integer()
     created_on = fields.fields.String()
     updated_on = fields.fields.String()

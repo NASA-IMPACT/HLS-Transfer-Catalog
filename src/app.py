@@ -14,8 +14,8 @@ from sqlalchemy import and_, asc
 import src.constants as CONSTANTS
 from src.config import CONFIG_BY_ENV
 from src.services.db.enums import SealedStatus, TransferStatus
-from src.services.db.models import CatalogueItem, CatalogueArchiveItem, db
-from src.services.db.schema import CatalogueItemSchema
+from src.services.db.models import CatalogueItem, CatalogueArchiveItem, CatalogueTransferTracker, db
+from src.services.db.schema import CatalogueItemSchema, CatalogueTransferTrackerSchema
 from src.utils import abort_json, clean_files, token_required
 
 ENV = os.getenv("FLASK_ENV", "local")
@@ -483,10 +483,98 @@ def archive_catalogue_records():
         200,
     )
 
+
+@app.route("/catalogue/transfer/", methods=["POST"])
+#@token_required
+def create_catalogue_transfer():
+    """
+    Create single catalog transfer record and return the created record.
+    """
+    logger.info("/catalogue/transfer/ POST called")
+    data = request.json
+
+    data["uuid"] = data.get("uuid", uuid.uuid4().hex)
+    data["created_on"] = data.get("created_on", datetime.now())
+    data["updated_on"] = data.get("updated_on", datetime.now())
+    data["transfer_status"] = data.get("transfer_status", "NOT_STARTED").upper()
+
+    query = CatalogueTransferTracker.query.filter_by(uuid=data["uuid"]).first()
+    if query:
+        abort_json(
+            400,
+            error="INSERTION_FAILED",
+            message="uuid already exists!",
+        )
+
+    try:
+        item = CatalogueTransferTracker(**data)
+        db.session.add(item)
+        db.session.commit()
+    except:
+        abort_json(
+            400,
+            error="INSERTION_FAILED",
+            message="Unable to create the catalogue item.",
+        )
+
+    return jsonify(data)
+
+@app.route("/catalogue/transfer/", methods=["GET"])
+def list_catalogue_transfer():
+    """
+    Endpoint to list the transfers
+    """
+    logger.info("/catalogue/transfer/ GET called")
+
+    res = CatalogueTransferTracker.query.order_by(CatalogueTransferTracker.updated_on.desc()).all()
+
+    res = CatalogueTransferTrackerSchema(many=True).dump(res)
+    logger.debug(f"Total rows selected = {len(res)}")
+
+    return jsonify(res)
+
+@app.route("/catalogue/transfer/uuid/<uuid>/", methods=["GET"])
+#@token_required
+def get_catalogue_transfer(uuid: str):
+    """
+    GET single catalogue transfer item from the database
+    """
+    logger.info("/catalogue/transfer/uuid/<uuid>/ GET called")
+    res = CatalogueTransferTracker.query.filter_by(uuid=uuid).first()
+    if not res:
+        abort_json(404, error="DATA_NOT_FOUND", message="Item not found!")
+    res = CatalogueTransferTrackerSchema().dump(res)
+    return jsonify(res)
+
+@app.route("/catalogue/transfer/uuid/<uuid>/", methods=["PATCH"])
+#@token_required
+def patch_catalogue_transfer(uuid: str):
+    """
+    Upsert a single catalogue transfer item.
+    """
+    logger.info("/catalogue/transfer/uuid/<uuid>/ PATCH called")
+    data = request.json
+
+    item = CatalogueTransferTracker.query.filter_by(uuid=uuid).first()
+    if not item:
+        abort_json(404, error="PATCH_FAILED", message="uuid doesn't exist!")
+
+    try:
+        if "transfer_status" in data:
+            data["transfer_status"] = data["transfer_status"].upper()
+        item.update(data)
+    except:
+        abort_json(
+            400,
+            error="PATCH_FAILED",
+            message="Unable to update the catalogue transfer item.",
+        )
+    db.session.commit()
+    return jsonify(CatalogueTransferTrackerSchema().dump(item))
+
 @app.route("/health/", methods=["GET"])
 def health():
     return "Catalogue server v1 api!"
-
 
 if __name__ == "__main__":
     app.run()
