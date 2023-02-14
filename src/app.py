@@ -576,5 +576,6 @@ def patch_catalogue_transfer(uuid: str):
 def health():
     return "Catalogue server v1 api!"
 
+
 if __name__ == "__main__":
     app.run()
